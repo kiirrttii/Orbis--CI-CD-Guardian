@@ -4,20 +4,94 @@ import { AppLayout } from '@/components/layout/app-layout'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useTheme } from 'next-themes'
-import { Moon, Sun, Mail, Key, CheckCircle, AlertCircle, Monitor, Settings, Zap, Download, Bell, Cog } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { Moon, Sun, Mail, Key, CheckCircle, AlertCircle, Monitor, Settings, Zap, Download, Bell, Cog, Save } from 'lucide-react'
+import { useState, useEffect, useMemo } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { apiClient } from '@/lib/api'
+import { useAuth } from '@/hooks/use-auth'
+import { toast } from 'sonner'
+import { useRouter } from 'next/navigation'
+import { UserDetailedResponse, UserUpdate } from '@/lib/api-types'
 import { mockIntegrations } from '@/lib/mock-data'
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme()
+  const { user: authUser, authReady } = useAuth()
+  const queryClient = useQueryClient()
+  const router = useRouter()
+  
   const [mounted, setMounted] = useState(false)
   const [activeTab, setActiveTab] = useState<'appearance' | 'profile' | 'backend' | 'integrations' | 'preferences'>('appearance')
+  
+  // ── Layered State Management ───────────────────────────────────────────────
+  // 1. Canonical State (from server)
+  const { data: serverUser, isLoading: isFetching } = useQuery({
+    queryKey: ['me'],
+    queryFn: () => apiClient.getMe(),
+    enabled: authReady && !!authUser
+  })
+
+  // 2. Draft State (local edits)
+  const [draft, setDraft] = useState<Partial<UserUpdate>>({})
+  const [hasChanges, setHasChanges] = useState(false)
+
+  // 3. Mutation State (saving)
+  const mutation = useMutation({
+    mutationFn: (data: UserUpdate) => apiClient.updateMe(data),
+    onSuccess: (data) => {
+      queryClient.setQueryData(['me'], data)
+      setDraft({})
+      setHasChanges(false)
+      toast.success('Settings updated successfully')
+    },
+    onError: (error: any) => {
+      const message = error.response?.data?.message || 'Failed to update settings'
+      toast.error(message)
+    }
+  })
 
   useEffect(() => {
     setMounted(true)
   }, [])
 
-  if (!mounted) return null
+  // Sync draft detection
+  useEffect(() => {
+    if (!serverUser) return
+    
+    const isDifferent = Object.keys(draft).some(key => {
+      const k = key as keyof UserUpdate
+      if (k === 'preferences' && draft.preferences) {
+        return JSON.stringify(draft.preferences) !== JSON.stringify(serverUser.preferences)
+      }
+      return draft[k] !== (serverUser as any)[k]
+    })
+    
+    setHasChanges(isDifferent)
+  }, [draft, serverUser])
+
+  // Navigation Guard Placeholder
+  useEffect(() => {
+    if (hasChanges) {
+      const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+        e.preventDefault()
+        e.returnValue = ''
+      }
+      window.addEventListener('beforeunload', handleBeforeUnload)
+      return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+    }
+  }, [hasChanges])
+
+  if (!mounted || isFetching) return (
+    <AppLayout>
+      <div className="p-8 space-y-8 animate-pulse">
+        <div className="h-10 w-48 bg-muted rounded" />
+        <div className="h-64 bg-card rounded-xl border border-border" />
+      </div>
+    </AppLayout>
+  )
+
+  const currentUser = serverUser as UserDetailedResponse
+  const displayData = { ...currentUser, ...draft }
 
   return (
     <AppLayout>
@@ -119,13 +193,26 @@ export default function SettingsPage() {
         {activeTab === 'profile' && (
           <div className="space-y-6">
             <Card className="p-6">
-              <h2 className="text-lg font-semibold text-foreground mb-6">User Profile</h2>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-lg font-semibold text-foreground">User Profile</h2>
+                {hasChanges && (
+                  <Button 
+                    onClick={() => mutation.mutate(draft as UserUpdate)} 
+                    disabled={mutation.isPending}
+                    className="gap-2"
+                  >
+                    <Save className="w-4 h-4" />
+                    {mutation.isPending ? 'Saving...' : 'Save Changes'}
+                  </Button>
+                )}
+              </div>
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">Full Name</label>
                   <input
                     type="text"
-                    defaultValue="Alex Johnson"
+                    value={displayData.full_name || ''}
+                    onChange={(e) => setDraft(prev => ({ ...prev, full_name: e.target.value }))}
                     className="w-full px-4 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                 </div>
@@ -137,32 +224,41 @@ export default function SettingsPage() {
                   </label>
                   <input
                     type="email"
-                    defaultValue="alex@company.com"
+                    value={displayData.email || ''}
+                    onChange={(e) => setDraft(prev => ({ ...prev, email: e.target.value }))}
                     className="w-full px-4 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">Role</label>
-                  <select className="w-full px-4 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary">
-                    <option>DevOps Engineer</option>
-                    <option>Security Officer</option>
-                    <option>Engineering Manager</option>
-                    <option>Administrator</option>
+                  <select 
+                    value={displayData.role || ''}
+                    onChange={(e) => setDraft(prev => ({ ...prev, role: e.target.value as any }))}
+                    className="w-full px-4 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                  >
+                    <option value="Developer">Developer</option>
+                    <option value="Analyst">Analyst</option>
+                    <option value="Viewer">Viewer</option>
+                    <option value="Administrator">Administrator</option>
                   </select>
+                  {displayData.role === 'Administrator' && serverUser?.role !== 'Administrator' && (
+                    <p className="text-xs text-status-critical mt-1 flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3" />
+                      Self-promotion to Admin will be rejected by the backend.
+                    </p>
+                  )}
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">Workspace</label>
                   <input
                     type="text"
-                    defaultValue="Acme Corporation"
+                    value="Orbis Workspace"
                     disabled
                     className="w-full px-4 py-2 border border-border rounded-lg bg-muted text-muted-foreground cursor-not-allowed"
                   />
                 </div>
-
-                <Button className="w-full">Save Changes</Button>
               </div>
             </Card>
 
@@ -339,18 +435,36 @@ export default function SettingsPage() {
         {activeTab === 'preferences' && (
           <div className="space-y-6">
             <Card className="p-6">
-              <h2 className="text-lg font-semibold text-foreground mb-6">Export & Data</h2>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-lg font-semibold text-foreground">Export & Data</h2>
+                {hasChanges && (
+                  <Button 
+                    onClick={() => mutation.mutate(draft as UserUpdate)} 
+                    disabled={mutation.isPending}
+                    className="gap-2"
+                  >
+                    <Save className="w-4 h-4" />
+                    {mutation.isPending ? 'Saving...' : 'Save Changes'}
+                  </Button>
+                )}
+              </div>
               <div className="space-y-3">
                 <div className="flex items-center justify-between p-3 border border-border rounded-lg">
                   <div>
                     <p className="font-medium text-foreground">Default Export Format</p>
                     <p className="text-xs text-muted-foreground">Choose your preferred report format</p>
                   </div>
-                  <select className="px-3 py-1 border border-border rounded bg-background text-foreground text-sm">
-                    <option>PDF</option>
-                    <option>Excel</option>
-                    <option>JSON</option>
-                    <option>CSV</option>
+                  <select 
+                    value={displayData.preferences?.export_format || 'pdf'}
+                    onChange={(e) => setDraft(prev => ({
+                      ...prev,
+                      preferences: { ...(prev.preferences || currentUser.preferences), export_format: e.target.value as any }
+                    }))}
+                    className="px-3 py-1 border border-border rounded bg-background text-foreground text-sm"
+                  >
+                    <option value="pdf">PDF</option>
+                    <option value="csv">CSV</option>
+                    <option value="json">JSON</option>
                   </select>
                 </div>
 
@@ -359,11 +473,17 @@ export default function SettingsPage() {
                     <p className="font-medium text-foreground">Telemetry Refresh Interval</p>
                     <p className="text-xs text-muted-foreground">How often to sync new workflow data</p>
                   </div>
-                  <select className="px-3 py-1 border border-border rounded bg-background text-foreground text-sm">
-                    <option>Every 5 minutes</option>
-                    <option>Every 15 minutes</option>
-                    <option>Every 30 minutes</option>
-                    <option>Every hour</option>
+                  <select 
+                    value={displayData.preferences?.refresh_interval || 30}
+                    onChange={(e) => setDraft(prev => ({
+                      ...prev,
+                      preferences: { ...(prev.preferences || currentUser.preferences), refresh_interval: parseInt(e.target.value) }
+                    }))}
+                    className="px-3 py-1 border border-border rounded bg-background text-foreground text-sm"
+                  >
+                    <option value="15">Every 15 minutes</option>
+                    <option value="30">Every 30 minutes</option>
+                    <option value="60">Every hour</option>
                   </select>
                 </div>
               </div>
@@ -373,17 +493,22 @@ export default function SettingsPage() {
               <h2 className="text-lg font-semibold text-foreground mb-6">Notifications</h2>
               <div className="space-y-3">
                 {[
-                  { label: 'Critical Alerts', description: 'Deployment risk above 75%' },
-                  { label: 'Analysis Complete', description: 'When reports are ready' },
-                  { label: 'Telemetry Updates', description: 'New workflow runs detected' },
-                  { label: 'System Status', description: 'Backend health changes' },
+                  { id: 'notifications', label: 'Global Notifications', description: 'Enable or disable all alerts' },
                 ].map((item) => (
-                  <div key={item.label} className="flex items-center justify-between p-3 border border-border rounded-lg">
+                  <div key={item.id} className="flex items-center justify-between p-3 border border-border rounded-lg">
                     <div>
                       <p className="font-medium text-foreground">{item.label}</p>
                       <p className="text-xs text-muted-foreground">{item.description}</p>
                     </div>
-                    <input type="checkbox" defaultChecked className="w-5 h-5 rounded" />
+                    <input 
+                      type="checkbox" 
+                      checked={!!displayData.preferences?.notifications}
+                      onChange={(e) => setDraft(prev => ({
+                        ...prev,
+                        preferences: { ...(prev.preferences || currentUser.preferences), notifications: e.target.checked }
+                      }))}
+                      className="w-5 h-5 rounded accent-primary" 
+                    />
                   </div>
                 ))}
               </div>
@@ -395,17 +520,23 @@ export default function SettingsPage() {
                 <div className="flex items-center justify-between p-3 border border-border rounded-lg">
                   <div>
                     <p className="font-medium text-foreground">Compact Mode</p>
-                    <p className="text-xs text-muted-foreground">Condensed UI elements</p>
+                    <p className="text-xs text-muted-foreground">Condensed UI elements (Experimental)</p>
                   </div>
-                  <input type="checkbox" className="w-5 h-5 rounded" />
-                </div>
-
-                <div className="flex items-center justify-between p-3 border border-border rounded-lg">
-                  <div>
-                    <p className="font-medium text-foreground">Show Onboarding Tips</p>
-                    <p className="text-xs text-muted-foreground">Display helpful hints</p>
-                  </div>
-                  <input type="checkbox" defaultChecked className="w-5 h-5 rounded" />
+                  <input 
+                    type="checkbox" 
+                    checked={!!displayData.preferences?.experimental_features?.compact_mode}
+                    onChange={(e) => setDraft(prev => ({
+                      ...prev,
+                      preferences: { 
+                        ...(prev.preferences || currentUser.preferences), 
+                        experimental_features: { 
+                          ...(prev.preferences || currentUser.preferences).experimental_features,
+                          compact_mode: e.target.checked 
+                        }
+                      }
+                    }))}
+                    className="w-5 h-5 rounded accent-primary" 
+                  />
                 </div>
               </div>
             </Card>
@@ -413,13 +544,23 @@ export default function SettingsPage() {
             {/* Data Management */}
             <Card className="p-6 border-yellow-200 dark:border-yellow-900 bg-yellow-50 dark:bg-yellow-950/20">
               <h2 className="text-lg font-semibold text-yellow-800 dark:text-yellow-200 mb-4">Data Management</h2>
-              <Button variant="outline" className="gap-2">
-                <Download className="w-4 h-4" />
-                Export All Data
-              </Button>
+              <div className="flex gap-4">
+                <Button variant="outline" className="gap-2">
+                  <Download className="w-4 h-4" />
+                  Export All Data
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="gap-2 border-status-critical text-status-critical hover:bg-status-critical/10"
+                  onClick={() => toast.error('This action requires Administrator privileges.')}
+                >
+                  Purge History
+                </Button>
+              </div>
             </Card>
           </div>
         )}
+
       </div>
     </AppLayout>
   )

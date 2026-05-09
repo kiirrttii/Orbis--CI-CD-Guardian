@@ -1,4 +1,4 @@
-# RiskOps AI Frontend - UI/UX Fixes Complete
+# Orbis Frontend - UI/UX Fixes Complete
 
 ## Fixes Implemented
 

@@ -25,6 +25,7 @@ class FeatureContributionSchema(BaseModel):
     feature: str = Field(..., description="Name of the feature")
     shap_value: float = Field(..., description="Absolute magnitude of the SHAP contribution")
     impact_percent: float = Field(..., description="Percentage of total absolute SHAP impact")
+    interpretation: str = Field("", description="Human-readable interpretation of the feature's impact")
     direction: Literal["increase_risk", "decrease_risk"] = Field(
         ..., description="Direction of the contribution"
     )

@@ -1,4 +1,4 @@
-## RiskOps AI Frontend Refactoring - Complete
+## Orbis Frontend Refactoring - Complete
 
 ### Changes Made
 

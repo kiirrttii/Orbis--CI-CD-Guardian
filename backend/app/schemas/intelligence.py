@@ -18,6 +18,7 @@ class IntelligenceResponse(BaseModel):
     """
     workflow_run_id: uuid.UUID = Field(..., description="ID of the workflow run")
     prediction_id: uuid.UUID = Field(..., description="ID of the persisted prediction")
+    target_name: str = Field(default="Unknown Target", description="Meaningful name for the analysis target (e.g., repository name)")
     inference: PredictionResponse = Field(..., description="Raw model prediction and risk score")
     explainability: List[FeatureContributionSchema] = Field(..., description="SHAP feature contributions")
     recommendations: List[ActionableInsight] = Field(..., description="Prioritized recommendations")

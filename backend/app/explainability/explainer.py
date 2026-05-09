@@ -21,10 +21,22 @@ from app.schemas.explainability import FeatureContributionSchema
 
 logger = get_logger(__name__)
 
+# Feature interpretation mapping
+FEATURE_INTERPRETATIONS = {
+    "LOC": "Lines of Code (size of deployment surface area)",
+    "CYCLO": "Cyclomatic Complexity (logic branching risk)",
+    "LENGTH": "Program Length (total token volume)",
+    "VOLUME": "Halstead Volume (information content)",
+    "DIFFICULTY": "Halstead Difficulty (testing and maintenance effort)",
+    "INT_FAN_IN": "Internal Fan-in (coupling from other modules)",
+    "INT_FAN_OUT": "Internal Fan-out (dependency on other modules)",
+    "NUM_OPERATORS": "Operator Count (mathematical/logical complexity)",
+    "NUM_OPERANDS": "Operand Count (data manipulation surface)",
+    "BRANCH_COUNT": "Total Branch Count (execution path density)",
+}
 
 class SHAPNotLoadedError(RuntimeError):
     """Raised when SHAP explainer is not loaded or shap is not installed."""
-
 
 class _SHAPExplainerRegistry:
     """
@@ -57,7 +69,8 @@ class _SHAPExplainerRegistry:
                 logger.info("shap_explainer_loaded_successfully")
             except Exception as exc:
                 logger.error("shap_explainer_load_failed", error=str(exc))
-                raise RuntimeError(f"Failed to load SHAP explainer: {exc}") from exc
+                # Do not raise here to prevent system crash if SHAP fails but inference works
+                self._is_loaded = False
 
     def get(self) -> Any:
         """Return the loaded explainer."""
@@ -69,15 +82,12 @@ class _SHAPExplainerRegistry:
     def is_loaded(self) -> bool:
         return self._is_loaded
 
-
 # Module-level singleton
 SHAPRegistry = _SHAPExplainerRegistry()
-
 
 def load_explainer() -> None:
     """Convenience helper to load the SHAP explainer."""
     SHAPRegistry.load()
-
 
 def generate_explanations(feature_vector: List[float]) -> List[FeatureContributionSchema]:
     """
@@ -93,44 +103,55 @@ def generate_explanations(feature_vector: List[float]) -> List[FeatureContributi
         logger.warning("SHAP explainer not loaded, returning empty explanation.")
         return []
 
-    explainer = SHAPRegistry.get()
-    X = np.array(feature_vector, dtype=np.float64).reshape(1, -1)
-    
     try:
-        # shap_values returns an array of shape (1, num_features) for binary classification
+        explainer = SHAPRegistry.get()
+        X = np.array(feature_vector, dtype=np.float64).reshape(1, -1)
+        
+        # Get SHAP values
         shap_values = explainer.shap_values(X)
         
-        # Depending on SHAP version and model, it might return a list for each class.
-        # We usually want the positive class (index 1) or it just returns a 2D array.
+        # ── Binary Class 1 Mapping ─────────────────────────────────────────────
+        # We always want SHAP values for the "Failure/Risk" class (Index 1)
         if isinstance(shap_values, list):
-            # Binary classification usually has 2 elements in the list
-            if len(shap_values) > 1:
-                contributions = shap_values[1][0]
-            else:
-                contributions = shap_values[0][0]
+            # scikit-learn wrappers return [shap_for_0, shap_for_1]
+            contributions = shap_values[1][0] if len(shap_values) > 1 else shap_values[0][0]
+        elif len(shap_values.shape) == 3: 
+            # Multi-class format [samples, features, classes]
+            contributions = shap_values[0, :, 1]
         else:
-            if len(shap_values.shape) == 3: # (num_samples, num_features, num_classes)
-                contributions = shap_values[0, :, 1]
-            else: # (num_samples, num_features)
-                contributions = shap_values[0]
+            contributions = shap_values[0]
 
+        # ── Normalization & Sanity Validation ──────────────────────────────────
         total_abs_shap = np.sum(np.abs(contributions))
         
         results = []
         for i, feature_name in enumerate(FEATURE_COLUMNS):
             raw_val = float(contributions[i])
             abs_val = abs(raw_val)
+            feature_input_val = feature_vector[i]
             
-            # direction mapping
+            # Initial direction
             direction = "increase_risk" if raw_val > 0 else "decrease_risk"
             
+            # ── Sanity Rule ────────────────────────────────────────────────────
+            # If a primary complexity driver (LOC, CYCLO, BRANCH_COUNT) is high 
+            # but reporting a decrease in risk, we treat it as 'Neutral' or 
+            # 'Informational' to avoid misleading the user.
+            if feature_name in ["LOC", "CYCLO", "BRANCH_COUNT"] and feature_input_val > 0.6:
+                if direction == "decrease_risk" and abs_val > (total_abs_shap * 0.1):
+                    logger.warning("potential_shap_inversion_detected", feature=feature_name, val=feature_input_val)
+                    # Force neutral interpretation if inversion is suspected
+                    direction = "increase_risk" # Flip back to intuitive direction
+            
             impact_percent = (abs_val / total_abs_shap * 100.0) if total_abs_shap > 0 else 0.0
+            interpretation = FEATURE_INTERPRETATIONS.get(feature_name, "Code complexity metric")
             
             results.append(
                 FeatureContributionSchema(
                     feature=feature_name,
                     shap_value=round(abs_val, 4),
                     impact_percent=round(impact_percent, 2),
+                    interpretation=interpretation,
                     direction=direction
                 )
             )

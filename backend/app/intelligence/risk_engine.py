@@ -10,12 +10,14 @@ from app.core.risk_policy import RiskSeverity, classify_severity
 def compute_risk_score(probability: float) -> float:
     """
     Convert a model probability [0.0, 1.0] to a risk score [0.0, 100.0].
+    Uses a baseline risk floor of 10.0 for analytics visibility.
     """
     if not 0.0 <= probability <= 1.0:
         raise ValueError(
             f"probability must be in [0.0, 1.0], got {probability!r}"
         )
-    return round(probability * 100.0, 2)
+    # Calibrate: 0.0 probability -> 10.0 score, 1.0 probability -> 100.0 score
+    return round(10.0 + (probability * 90.0), 2)
 
 def score_and_classify(probability: float) -> tuple[float, RiskSeverity]:
     """

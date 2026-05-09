@@ -105,30 +105,32 @@ export function AnalysisResults({ result }: AnalysisResultsProps) {
 
         {/* SHAP Tab */}
         <TabsContent value="shap" className="space-y-4">
-          <SHAPMini shapValues={result.shap_values} />
+          <SHAPMini explainability={result.explainability} />
         </TabsContent>
 
         {/* Recommendations Tab */}
         <TabsContent value="recommendations" className="space-y-4">
           {result.recommendations.length > 0 ? (
-            result.recommendations.map((rec) => (
-              <Card key={rec.id} className="p-4">
+            result.recommendations.map((rec, index) => (
+              <Card key={index} className="p-4">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <h4 className="font-semibold text-foreground mb-1">{rec.title}</h4>
-                    <p className="text-sm text-muted-foreground mb-2">{rec.reason}</p>
-                    <div className="flex gap-2">
-                      <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
-                        {rec.action_type}
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded ${
+                        rec.priority === 'CRITICAL' || rec.priority === 'HIGH' 
+                          ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' 
+                          : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                      }`}>
+                        {rec.priority}
                       </span>
-                      <span className={`text-xs ${getSeverityColor(rec.severity)} ${getSeverityBg(rec.severity)} px-2 py-1 rounded`}>
-                        {rec.severity}
+                      <h4 className="font-semibold text-foreground">{rec.title}</h4>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-3">{rec.reason}</p>
+                    <div className="flex gap-2">
+                      <span className="text-xs bg-secondary text-secondary-foreground px-2 py-1 rounded-md border border-border">
+                        Action: {rec.action_type}
                       </span>
                     </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-xs text-muted-foreground">Priority</p>
-                    <p className="text-lg font-bold text-foreground">{rec.priority}</p>
                   </div>
                 </div>
               </Card>

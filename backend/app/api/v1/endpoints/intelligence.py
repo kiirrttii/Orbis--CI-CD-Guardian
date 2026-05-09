@@ -36,4 +36,4 @@ async def analyze_risk(
     """
     Production-grade endpoint for full intelligence payload.
     """
-    return await analyze_and_persist(request, db, workflow_run_id)
+    return await analyze_and_persist(request, db, workflow_run_id=workflow_run_id, analysis_type="metrics")

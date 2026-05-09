@@ -111,27 +111,45 @@ async def login(
     )
     return response
 
+from app.schemas.user import UserDetailedResponse, UserUpdate
+from app.services.user_service import UserService
+
 @router.get(
     "/me",
-    response_model=UserResponse,
-    summary="Get current authenticated user",
+    response_model=UserDetailedResponse,
+    summary="Get current authenticated user with full details",
 )
-async def read_users_me(current_user: User = Depends(get_current_user)):
-    return UserResponse(
-        id=current_user.id,
-        email=current_user.email,
-        full_name=current_user.full_name
-    )
+async def read_users_me(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    service = UserService(db)
+    return service.map_to_detailed_response(current_user)
+
+@router.put(
+    "/me",
+    response_model=UserDetailedResponse,
+    summary="Update current user profile and preferences",
+)
+async def update_user_me(
+    update_data: UserUpdate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    service = UserService(db)
+    updated_user = await service.update_user(current_user, update_data)
+    return service.map_to_detailed_response(updated_user)
 
 @router.get(
     "/verify",
     response_model=VerifyResponse,
     summary="Verify token validity",
 )
-async def verify_token(current_user: User = Depends(get_current_user)):
-    """
-    Returns the user if the token is valid, otherwise the dependency throws 401.
-    """
+async def verify_token(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    service = UserService(db)
     return VerifyResponse(
         valid=True,
         user=UserResponse(

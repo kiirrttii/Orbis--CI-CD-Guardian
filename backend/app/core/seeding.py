@@ -18,8 +18,8 @@ async def seed_demo_user():
     """
     Creates a demo admin user if it doesn't already exist.
     """
-    admin_email = "admin@riskops.ai"
-    admin_password = "RiskOps123"
+    admin_email = "admin@orbis.ai"
+    admin_password = "Orbis123"
     
     async with AsyncSessionLocal() as session:
         try:
@@ -32,7 +32,7 @@ async def seed_demo_user():
                 new_user = User(
                     email=admin_email,
                     hashed_password=hash_password(admin_password),
-                    full_name="RiskOps Admin",
+                    full_name="Orbis Admin",
                     is_active=True
                 )
                 session.add(new_user)
@@ -48,7 +48,7 @@ async def seed_mock_telemetry():
     """
     Seeds mock repository and telemetry data matching frontend UUIDs.
     """
-    mock_repo_url = "https://github.com/demo/riskops-demo"
+    mock_repo_url = "https://github.com/demo/orbis-demo"
     mock_runs = [
         {"id": "5c21504d-9383-4419-ab64-cba3e6d7dfdb", "name": "Build and Deploy - Main"},
         {"id": "21aa7db1-3904-47cb-9570-7beb924b7941", "name": "Run Tests - PR"},
@@ -68,8 +68,8 @@ async def seed_mock_telemetry():
                 repo = Repository(
                     repo_url=mock_repo_url,
                     owner="demo",
-                    name="riskops-demo",
-                    full_name="demo/riskops-demo",
+                    name="orbis-demo",
+                    full_name="demo/orbis-demo",
                     connection_status=ConnectionStatus.CONNECTED,
                     is_active=True
                 )

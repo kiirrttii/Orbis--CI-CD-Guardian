@@ -39,15 +39,24 @@ async def list_history(
     for pred in history:
         # Map ORM to IntelligenceResponse
         # Note: In a production app, we'd use a more efficient mapper or partial schema
+        target_name = "Manual Analysis"
+        if pred.workflow_run:
+            if pred.workflow_run.repository:
+                target_name = pred.workflow_run.repository.name
+            else:
+                target_name = pred.workflow_run.workflow_name
+
         results.append(
             IntelligenceResponse(
                 workflow_run_id=pred.workflow_run_id,
                 prediction_id=pred.id,
+                target_name=target_name,
                 inference=PredictionResponse(
                     prediction=int(pred.predicted_label == "fail"),
                     probability=pred.failure_probability,
                     risk_score=pred.risk_score,
-                    severity=pred.severity, # derived property if added to model, or calculated
+                    severity=pred.severity,
+                    analysis_type=pred.analysis_type,
                     model_version=pred.model_version,
                     timestamp=pred.created_at
                 ),
@@ -79,16 +88,25 @@ async def get_history_detail(
             detail="Analysis report not found"
         )
         
+    target_name = "Manual Analysis"
+    if pred.workflow_run:
+        if pred.workflow_run.repository:
+            target_name = pred.workflow_run.repository.name
+        else:
+            target_name = pred.workflow_run.workflow_name
+
     # Manual mapping for now to ensure all fields are populated correctly
     # In a real app, use a proper mapping layer or Pydantic.from_orm
     return IntelligenceResponse(
         workflow_run_id=pred.workflow_run_id,
         prediction_id=pred.id,
+        target_name=target_name,
         inference=PredictionResponse(
             prediction=int(pred.predicted_label == "fail"),
             probability=pred.failure_probability,
             risk_score=pred.risk_score,
             severity=pred.severity, 
+            analysis_type=pred.analysis_type,
             model_version=pred.model_version,
             timestamp=pred.created_at
         ),
@@ -98,7 +116,8 @@ async def get_history_detail(
                 "feature": fc.feature_name,
                 "shap_value": fc.contribution_value,
                 "impact_percent": fc.impact_percent,
-                "direction": fc.direction
+                "direction": fc.direction,
+                "interpretation": fc.interpretation
             } for fc in pred.feature_contributions
         ],
         recommendations=[

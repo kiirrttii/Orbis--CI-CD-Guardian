@@ -40,19 +40,13 @@ class Prediction(BaseModel):
     )
 
     # ── Prediction Output ─────────────────────────────────────────────────────
-    risk_score: Mapped[float] = mapped_column(Float, nullable=False)          # 0.0–1.0
+    risk_score: Mapped[float] = mapped_column(Float, nullable=False)          # 0.0–100.0
+    severity: Mapped[str] = mapped_column(String(20), nullable=False, default="LOW")
+    analysis_type: Mapped[str] = mapped_column(String(50), nullable=False, default="manual")
     failure_probability: Mapped[float] = mapped_column(Float, nullable=False) # 0.0–1.0
     predicted_label: Mapped[str] = mapped_column(String(50), nullable=False)  # "pass" | "fail"
 
     raw_output: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
-
-    @property
-    def severity(self) -> str:
-        """Derived severity label based on risk score."""
-        if self.risk_score >= 0.75: return "CRITICAL"
-        if self.risk_score >= 0.50: return "HIGH"
-        if self.risk_score >= 0.25: return "MEDIUM"
-        return "LOW"
 
     # ── Relationships ─────────────────────────────────────────────────────────
     workflow_run: Mapped["WorkflowRun"] = relationship(

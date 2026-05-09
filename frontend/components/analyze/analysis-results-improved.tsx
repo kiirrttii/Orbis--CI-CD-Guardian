@@ -8,6 +8,7 @@ import { Download, FileJson, Sheet, CheckCircle, Loader } from 'lucide-react'
 import { RiskGauge } from './risk-gauge'
 import { SHAPMini } from './shap-mini'
 import type { AnalysisResponse } from '@/lib/api-types'
+import { cn } from '@/lib/utils'
 
 interface AnalysisResultsProps {
   result: AnalysisResponse | null
@@ -72,7 +73,7 @@ export function AnalysisResults({ result, isAnalyzing }: AnalysisResultsProps) {
       ['Timestamp', result.inference.timestamp],
       [],
       ['Feature', 'Impact (%)', 'Direction'],
-      ...result.explainability.map(e => [e.feature, Math.round(e.impact_percent * 100), e.direction > 0 ? 'Negative' : 'Positive']),
+      ...result.explainability.map(e => [e.feature, Math.round(e.impact_percent), e.direction === 'increase_risk' ? 'Increase Risk' : 'Decrease Risk']),
       [],
       ['Recommendation', 'Priority', 'Action Type'],
       ...result.recommendations.map(r => [r.title, r.priority, r.action_type])
@@ -118,7 +119,7 @@ export function AnalysisResults({ result, isAnalyzing }: AnalysisResultsProps) {
   if (!result && !isAnalyzing) return null
 
   const severity = result?.inference.severity || 'LOW'
-  const riskScore = result?.inference.risk_score ? Math.round(result.inference.risk_score * 100) : 0
+  const riskScore = result?.inference.risk_score ? Math.round(result.inference.risk_score) : 0
   const severityColor = getSeverityColor(severity)
   const severityBg = getSeverityBg(severity)
 
@@ -231,24 +232,30 @@ export function AnalysisResults({ result, isAnalyzing }: AnalysisResultsProps) {
         {/* Recommendations Tab */}
         <TabsContent value="recommendations" className="space-y-4">
           {result && result.recommendations.length > 0 ? (
-            result.recommendations.map((rec) => (
-              <Card key={rec.id} className="p-4">
-                <div className="flex items-start justify-between">
+            result.recommendations.map((rec, index) => (
+              <Card key={index} className="p-4 border-l-4 border-l-primary/50 bg-card hover:bg-muted/10 transition-colors">
+                <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
-                    <h4 className="font-semibold text-foreground mb-1">{rec.title}</h4>
-                    <p className="text-sm text-muted-foreground mb-2">{rec.reason}</p>
-                    <div className="flex gap-2">
-                      <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
-                        {rec.action_type}
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className={cn(
+                        "text-[10px] font-black uppercase px-2 py-0.5 rounded shadow-sm",
+                        rec.priority === 'CRITICAL' || rec.priority === 'HIGH' 
+                          ? 'bg-red-500 text-white' 
+                          : 'bg-blue-500 text-white'
+                      )}>
+                        {rec.priority}
                       </span>
-                      <span className={`text-xs ${getSeverityColor(rec.severity)} ${getSeverityBg(rec.severity)} px-2 py-1 rounded`}>
-                        {rec.severity}
-                      </span>
+                      <h4 className="font-bold text-foreground leading-tight">{rec.title}</h4>
                     </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-xs text-muted-foreground">Priority</p>
-                    <p className="text-lg font-bold text-foreground">{rec.priority}</p>
+                    <p className="text-sm text-muted-foreground leading-relaxed mb-4">{rec.reason}</p>
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-1.5 px-2 py-1 bg-secondary rounded-md border border-border">
+                        <Loader className="w-3 h-3 text-muted-foreground" />
+                        <span className="text-[11px] font-semibold text-foreground capitalize">
+                          Action: {rec.action_type}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </Card>

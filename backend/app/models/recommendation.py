@@ -17,10 +17,10 @@ if TYPE_CHECKING:
 
 
 class RecommendationPriority(str, enum.Enum):
-    LOW = "low"
-    MEDIUM = "medium"
-    HIGH = "high"
-    CRITICAL = "critical"
+    LOW = "LOW"
+    MEDIUM = "MEDIUM"
+    HIGH = "HIGH"
+    CRITICAL = "CRITICAL"
 
 
 class RecommendationStatus(str, enum.Enum):

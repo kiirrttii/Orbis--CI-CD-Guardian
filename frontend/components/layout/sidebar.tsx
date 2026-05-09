@@ -29,6 +29,8 @@ const navigation = [
   { name: 'Settings', href: '/settings', icon: Settings },
 ]
 
+import { APP_NAME } from '@/lib/config'
+
 export function Sidebar() {
   const pathname = usePathname()
 
@@ -37,12 +39,12 @@ export function Sidebar() {
       {/* Logo/Brand */}
       <div className="p-6 border-b border-sidebar-border">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-sidebar-primary rounded-lg flex items-center justify-center">
-            <Zap className="w-5 h-5 text-sidebar-primary-foreground" />
+          <div className="w-10 h-10 flex items-center justify-center bg-primary/10 rounded-xl">
+            <Zap className="w-6 h-6 text-primary" />
           </div>
           <div>
-            <h1 className="text-lg font-bold">RiskOps AI</h1>
-            <p className="text-xs text-sidebar-foreground/60">DevOps Intelligence</p>
+            <h1 className="text-lg font-bold">{APP_NAME}</h1>
+            <p className="text-xs text-sidebar-foreground/60">Risk-Aware CI/CD</p>
           </div>
         </div>
       </div>
@@ -76,7 +78,7 @@ export function Sidebar() {
       {/* Footer */}
       <div className="border-t border-sidebar-border p-4 bg-sidebar-accent/50">
         <p className="text-xs text-sidebar-foreground/60 text-center">
-          RiskOps AI v1.0
+          {APP_NAME} v1.0.0
         </p>
       </div>
     </aside>

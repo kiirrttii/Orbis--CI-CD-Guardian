@@ -38,3 +38,22 @@ async def health_db(db: AsyncSession = Depends(get_db)) -> dict:
         "status": "ok",
         "database": "reachable",
     }
+
+
+@router.get(
+    "/health/integrity",
+    summary="System integrity check",
+    description="Validates schema and data integrity (e.g. malformed preferences).",
+)
+async def health_integrity(db: AsyncSession = Depends(get_db)) -> dict:
+    # Principal Refinement: Check for corrupted preferences
+    from app.models.user import User
+    stmt = select(User).where(User.preferences == None)
+    result = await db.execute(stmt)
+    corrupted_count = len(result.scalars().all())
+    
+    return {
+        "status": "ok" if corrupted_count == 0 else "degraded",
+        "corrupted_preferences_count": corrupted_count,
+        "checked_at": "now" # Placeholder
+    }

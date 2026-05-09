@@ -1,7 +1,7 @@
-# RiskOps AI Frontend - Build Summary
+# Orbis Frontend - Build Summary
 
 ## Project Overview
-A production-grade enterprise SaaS frontend for RiskOps AI - an AI-powered DevOps platform providing risk intelligence for CI/CD pipelines with SHAP explainability.
+A production-grade enterprise SaaS frontend for Orbis - an AI-powered DevOps platform providing risk intelligence for CI/CD pipelines with SHAP explainability.
 
 ## ✅ Completed Components
 

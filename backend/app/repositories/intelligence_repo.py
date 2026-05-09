@@ -84,7 +84,7 @@ class IntelligenceRepository:
         stmt = (
             select(Prediction)
             .options(
-                selectinload(Prediction.workflow_run)
+                selectinload(Prediction.workflow_run).selectinload(WorkflowRun.repository)
             )
             .order_by(desc(Prediction.created_at))
             .limit(limit)
@@ -112,7 +112,7 @@ class IntelligenceRepository:
         stmt = (
             select(Prediction)
             .options(
-                selectinload(Prediction.workflow_run),
+                selectinload(Prediction.workflow_run).selectinload(WorkflowRun.repository),
                 selectinload(Prediction.feature_contributions),
                 selectinload(Prediction.recommendations)
             )

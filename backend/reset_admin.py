@@ -6,8 +6,8 @@ from app.core.security import hash_password
 
 async def reset_admin():
     async with AsyncSessionLocal() as db:
-        admin_email = "admin@riskops.ai"
-        admin_password = "RiskOps123"
+        admin_email = "admin@orbis.ai"
+        admin_password = "Orbis123"
         
         print(f"Resetting password for {admin_email}...")
         
@@ -24,7 +24,7 @@ async def reset_admin():
             new_user = User(
                 email=admin_email,
                 hashed_password=hash_password(admin_password),
-                full_name="RiskOps Admin",
+                full_name="Orbis Admin",
                 is_active=True
             )
             db.add(new_user)

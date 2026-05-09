@@ -7,6 +7,7 @@ These schemas form the contract between:
   - SHAP layer (future explainability, receives the same feature dict)
 """
 
+from datetime import datetime
 from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -124,6 +125,7 @@ class PredictionResponse(BaseModel):
                 "risk_score": 82.0,
                 "severity": "CRITICAL",
                 "model_version": "v1",
+                "timestamp": "2026-05-09T18:42:15Z"
             }
         }
     )
@@ -144,9 +146,17 @@ class PredictionResponse(BaseModel):
         ...,
         description="Severity band: LOW | MEDIUM | HIGH | CRITICAL",
     )
+    analysis_type: str = Field(
+        default="manual",
+        description="Type of analysis performed (e.g., repository, telemetry, metrics)",
+    )
     model_version: str = Field(
         default="v1",
         description="Model version tag for traceability",
+    )
+    timestamp: datetime = Field(
+        default_factory=datetime.utcnow,
+        description="Time when the prediction was generated"
     )
     # Reserved for future SHAP integration
     feature_contributions: Optional[dict[str, float]] = Field(

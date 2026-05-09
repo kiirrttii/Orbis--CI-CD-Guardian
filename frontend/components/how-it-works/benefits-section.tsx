@@ -30,10 +30,12 @@ const benefits = [
   },
 ]
 
+import { APP_NAME } from '@/lib/config'
+
 export function BenefitsSection() {
   return (
     <div className="max-w-4xl mx-auto">
-      <h2 className="text-3xl font-bold text-foreground mb-4 text-center">Why RiskOps AI</h2>
+      <h2 className="text-3xl font-bold text-foreground mb-4 text-center">Why {APP_NAME}</h2>
       <p className="text-center text-muted-foreground mb-12 text-lg">
         Transform your CI/CD pipeline with intelligent risk management
       </p>

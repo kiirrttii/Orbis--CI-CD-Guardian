@@ -23,6 +23,8 @@ from app.core.logging import configure_logging, get_logger
 from app.core.seeding import seed_demo_user
 from app.ml.model_loader import ModelLoadError, load_model
 from app.explainability.explainer import load_explainer
+from app.core.errors import AppError
+import uuid
 
 # Configure structured logging as the very first step
 configure_logging()
@@ -97,15 +99,21 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    # ── Request logging middleware ─────────────────────────────────────────────
+    # ── Request logging & Tracing middleware ───────────────────────────────────
     @app.middleware("http")
     async def log_requests(request: Request, call_next):
+        request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
+        structlog.contextvars.clear_contextvars()
+        structlog.contextvars.bind_contextvars(request_id=request_id)
+        
         logger.info(
             "http_request_received",
             method=request.method,
             path=request.url.path,
         )
         response = await call_next(request)
+        response.headers["X-Request-ID"] = request_id
+        
         logger.info(
             "http_response_sent",
             method=request.method,
@@ -115,6 +123,28 @@ def create_app() -> FastAPI:
         return response
 
     # ── Exception handlers ────────────────────────────────────────────────────
+
+    @app.exception_handler(AppError)
+    async def app_error_handler(request: Request, exc: AppError):
+        logger.warning("application_error", code=exc.code, message=exc.message)
+        status_map = {
+            "VALIDATION_ERROR": status.HTTP_422_UNPROCESSABLE_ENTITY,
+            "AUTHORIZATION_ERROR": status.HTTP_403_FORBIDDEN,
+            "AUTHENTICATION_ERROR": status.HTTP_401_UNAUTHORIZED,
+            "NOT_FOUND_ERROR": status.HTTP_404_NOT_FOUND,
+            "CONFLICT_ERROR": status.HTTP_409_CONFLICT,
+            "PERSISTENCE_ERROR": status.HTTP_500_INTERNAL_SERVER_ERROR,
+        }
+        status_code = status_map.get(exc.code, status.HTTP_400_BAD_REQUEST)
+        return JSONResponse(
+            status_code=status_code,
+            content={
+                "success": False,
+                "code": exc.code,
+                "message": exc.message,
+                "details": exc.details
+            },
+        )
 
     @app.exception_handler(ValueError)
     async def value_error_handler(request: Request, exc: ValueError):

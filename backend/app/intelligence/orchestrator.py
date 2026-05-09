@@ -30,7 +30,8 @@ logger = get_logger(__name__)
 async def analyze_and_persist(
     request: PredictionRequest,
     session: AsyncSession,
-    workflow_run_id: Optional[uuid.UUID] = None
+    workflow_run_id: Optional[uuid.UUID] = None,
+    analysis_type: str = "manual"
 ) -> IntelligenceResponse:
     """
     Orchestrate the full intelligence flow.
@@ -106,6 +107,8 @@ async def analyze_and_persist(
         model_name="model",
         model_version=inference_result.model_version,
         risk_score=inference_result.risk_score,
+        severity=inference_result.severity.value if hasattr(inference_result.severity, 'value') else str(inference_result.severity),
+        analysis_type=analysis_type,
         failure_probability=inference_result.probability,
         predicted_label=str(inference_result.prediction)
     )
@@ -119,7 +122,8 @@ async def analyze_and_persist(
                 contribution_value=exp.shap_value,
                 impact_percent=exp.impact_percent,
                 contribution_rank=i+1,
-                direction=exp.direction
+                direction=exp.direction,
+                interpretation=exp.interpretation
             )
         )
         
@@ -143,10 +147,26 @@ async def analyze_and_persist(
     logger.info("orchestration_completed", prediction_id=str(persisted_prediction.id))
     
     # 5. Assembly
+    target_name = "Manual Analysis"
+    if run:
+        if hasattr(run, 'repository') and run.repository:
+            target_name = run.repository.name
+        else:
+            target_name = run.workflow_name
+
     return IntelligenceResponse(
         workflow_run_id=workflow_run_id,
         prediction_id=persisted_prediction.id,
-        inference=inference_result,
+        target_name=target_name,
+        inference=PredictionResponse(
+            prediction=inference_result.prediction,
+            probability=inference_result.probability,
+            risk_score=inference_result.risk_score,
+            severity=inference_result.severity,
+            analysis_type=analysis_type,
+            model_version=inference_result.model_version,
+            timestamp=persisted_prediction.created_at
+        ),
         explainability=explanations,
         recommendations=recommendations
     )

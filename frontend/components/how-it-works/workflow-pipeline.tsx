@@ -29,10 +29,12 @@ const steps = [
   },
 ]
 
+import { APP_NAME } from '@/lib/config'
+
 export function WorkflowPipeline() {
   return (
     <div className="max-w-5xl mx-auto">
-      <h2 className="text-3xl font-bold text-foreground mb-12 text-center">The RiskOps Pipeline</h2>
+      <h2 className="text-3xl font-bold text-foreground mb-12 text-center">The {APP_NAME} Pipeline</h2>
 
       {/* Desktop View */}
       <div className="hidden lg:block">

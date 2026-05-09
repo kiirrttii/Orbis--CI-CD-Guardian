@@ -40,6 +40,7 @@ class FeatureContribution(BaseModel):
     direction: Mapped[Optional[str]] = mapped_column(
         String(20), nullable=True
     )  # "increase_risk" | "decrease_risk"
+    interpretation: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
 
     # ── Relationships ─────────────────────────────────────────────────────────
     prediction: Mapped["Prediction"] = relationship(

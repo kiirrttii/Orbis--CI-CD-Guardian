@@ -1,4 +1,4 @@
-// API Types for RiskOps AI backend
+// API Types for Orbis backend
 
 export type SeverityLevel = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'
 
@@ -32,11 +32,13 @@ export interface AnalysisRequest {
 export interface AnalysisResponse {
   workflow_run_id: string
   prediction_id: string
+  target_name: string
   inference: {
     prediction: number
     probability: number
     risk_score: number
     severity: SeverityLevel
+    analysis_type: string
     model_version: string
     timestamp: string
   }
@@ -44,20 +46,17 @@ export interface AnalysisResponse {
     feature: string
     shap_value: number
     impact_percent: number
-    direction: number
+    interpretation: string
+    direction: 'increase_risk' | 'decrease_risk'
   }>
-  recommendations: Recommendation[]
+  recommendations: ActionableInsight[]
 }
 
-export interface Recommendation {
-  id: string
+export interface ActionableInsight {
   title: string
   reason: string
+  priority: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW'
   action_type: string
-  related_feature?: string
-  severity: SeverityLevel
-  priority: number
-  status?: string
 }
 
 // ── Authentication ───────────────────────────────────────────────────────────
@@ -77,6 +76,29 @@ export interface UserResponse {
   id: string
   email: string
   full_name: string | null
+}
+
+export interface UserPreferences {
+  version: number
+  theme: 'light' | 'dark' | 'system'
+  notifications: boolean
+  export_format: 'pdf' | 'csv' | 'json'
+  refresh_interval: number
+  experimental_features: Record<string, boolean>
+}
+
+export interface UserUpdate {
+  full_name?: string
+  email?: string
+  role?: 'Developer' | 'Analyst' | 'Viewer' | 'Administrator'
+  preferences?: Partial<UserPreferences>
+}
+
+export interface UserDetailedResponse extends UserResponse {
+  role: string
+  preferences: UserPreferences
+  created_at: string
+  updated_at: string
 }
 
 export interface TokenResponse {

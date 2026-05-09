@@ -46,7 +46,7 @@ async def analyze_repository(
     request = PredictionRequest(**metrics)
     
     # 3. Call intelligence engine
-    return await analyze_and_persist(request, db)
+    return await analyze_and_persist(request, db, analysis_type="repository")
 
 
 @router.post(
@@ -88,7 +88,7 @@ async def analyze_telemetry(
     request = PredictionRequest(**metrics)
     
     # 3. Call intelligence engine
-    return await analyze_and_persist(request, db, workflow_run_id=payload.workflow_run_id)
+    return await analyze_and_persist(request, db, workflow_run_id=payload.workflow_run_id, analysis_type="telemetry")
 
 
 @router.post(
@@ -116,4 +116,4 @@ async def analyze_upload(
     prediction_req = PredictionRequest(**metrics)
     
     # 3. Call intelligence engine
-    return await analyze_and_persist(prediction_req, db)
+    return await analyze_and_persist(prediction_req, db, analysis_type="upload")

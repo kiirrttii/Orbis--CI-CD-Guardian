@@ -26,58 +26,113 @@ def generate_recommendations(
     """
     insights: List[ActionableInsight] = []
     
-    # We only care about generating recommendations if the risk is elevated.
-    if severity in (RiskSeverity.LOW, RiskSeverity.MEDIUM):
-        # We could still generate 'best practices' for medium, but for now we focus on mitigation.
-        return insights
-        
+    # Process each contribution for specific insights
     for contrib in contributions:
-        # Only look at features that significantly increase risk
-        if contrib.direction != "increase_risk":
-            continue
-            
-        # Ignore low-impact features (less than 10% of total SHAP impact)
-        if contrib.impact_percent < 10.0:
-            continue
-            
-        # Rule mapping based on feature name
-        if contrib.feature == "CYCLO":
-            insights.append(
-                ActionableInsight(
-                    title="Reduce Cyclomatic Complexity",
-                    reason=f"High complexity strongly increased deployment risk ({contrib.impact_percent}% impact). Consider refactoring this module to split logic.",
-                    priority=RecommendationPriority.HIGH if severity == RiskSeverity.CRITICAL else RecommendationPriority.MEDIUM,
-                    action_type="refactor"
+        # We process both risk-increasers (for mitigation) and risk-reducers (for confirmation)
+        # though we prioritize risk-increasers in the output.
+        
+        # Thresholds vary by severity to ensure even LOW risk gets informational feedback
+        threshold = 5.0 if severity == RiskSeverity.LOW else 8.0
+        
+        if contrib.direction == "increase_risk" and contrib.impact_percent >= threshold:
+            # Prioritization logic
+            prio = RecommendationPriority.MEDIUM
+            if severity == RiskSeverity.CRITICAL and contrib.impact_percent > 20:
+                prio = RecommendationPriority.CRITICAL
+            elif severity in (RiskSeverity.HIGH, RiskSeverity.CRITICAL):
+                prio = RecommendationPriority.HIGH
+            elif severity == RiskSeverity.LOW:
+                prio = RecommendationPriority.LOW
+
+            # Rule mapping based on feature name
+            if contrib.feature == "CYCLO":
+                insights.append(
+                    ActionableInsight(
+                        title="Reduce Logic Branching",
+                        reason=f"Cyclomatic complexity ({contrib.impact_percent}% impact) is high. Complex branching increases the likelihood of edge-case bugs. Consider extracting sub-functions.",
+                        priority=prio,
+                        action_type="refactor"
+                    )
                 )
-            )
-        elif contrib.feature == "BRANCH_COUNT":
-            insights.append(
-                ActionableInsight(
-                    title="Simplify Control Flow",
-                    reason=f"A high branch count is a top contributor to risk ({contrib.impact_percent}% impact). Try reducing the number of if/else or switch statements.",
-                    priority=RecommendationPriority.HIGH,
-                    action_type="refactor"
+            elif contrib.feature == "BRANCH_COUNT":
+                insights.append(
+                    ActionableInsight(
+                        title="Consolidate Execution Paths",
+                        reason=f"The codebase has an elevated branch density ({contrib.impact_percent}% impact). Consolidate logic to ensure full test coverage of all paths.",
+                        priority=prio,
+                        action_type="testing"
+                    )
                 )
-            )
-        elif contrib.feature == "DIFFICULTY":
-            insights.append(
-                ActionableInsight(
-                    title="Lower Code Difficulty",
-                    reason=f"Halstead difficulty is high, making the code harder to understand and test ({contrib.impact_percent}% impact).",
-                    priority=RecommendationPriority.MEDIUM,
-                    action_type="review"
+            elif contrib.feature == "DIFFICULTY":
+                insights.append(
+                    ActionableInsight(
+                        title="Simplify Code Interactions",
+                        reason=f"Halstead difficulty ({contrib.impact_percent}% impact) suggests high cognitive load. Simplify operator/operand interactions to reduce maintenance risk.",
+                        priority=prio,
+                        action_type="review"
+                    )
                 )
-            )
-        elif contrib.feature == "LOC":
-            insights.append(
-                ActionableInsight(
-                    title="Split Large Files",
-                    reason=f"The size of the codebase/module significantly elevated risk ({contrib.impact_percent}% impact). Consider splitting the file.",
-                    priority=RecommendationPriority.LOW,
-                    action_type="refactor"
+            elif contrib.feature == "LOC":
+                insights.append(
+                    ActionableInsight(
+                        title="Modularize Large Files",
+                        reason=f"Code volume ({contrib.impact_percent}% impact) is a significant risk driver. Large monolithic components are difficult to audit and more prone to regressions.",
+                        priority=prio,
+                        action_type="refactor"
+                    )
                 )
+            elif contrib.feature == "INT_FAN_OUT":
+                insights.append(
+                    ActionableInsight(
+                        title="Reduce Module Coupling",
+                        reason=f"High fan-out ({contrib.impact_percent}% impact) indicates excessive external dependencies. Decouple components to improve system resilience.",
+                        priority=prio,
+                        action_type="refactor"
+                    )
+                )
+            elif contrib.feature == "INT_FAN_IN":
+                insights.append(
+                    ActionableInsight(
+                        title="Critical Dependency Audit",
+                        reason=f"High fan-in ({contrib.impact_percent}% impact) identifies this as a core module. Changes here are high-stakes; ensure thorough integration testing.",
+                        priority=prio,
+                        action_type="testing"
+                    )
+                )
+            elif contrib.feature == "VOLUME":
+                insights.append(
+                    ActionableInsight(
+                        title="Information Density Review",
+                        reason=f"High code volume ({contrib.impact_percent}% impact) may obscure logic errors. Perform a focused peer-review of the implementation details.",
+                        priority=prio,
+                        action_type="review"
+                    )
+                )
+
+    # If severity is LOW and we have no specific risk-mitigation insights, 
+    # provide a 'Best Practice' confirmation.
+    if not insights and severity == RiskSeverity.LOW:
+        insights.append(
+            ActionableInsight(
+                title="Maintain Current Standards",
+                reason="Overall risk is low. Current code metrics align with stability best practices. Continue monitoring trends.",
+                priority=RecommendationPriority.LOW,
+                action_type="monitoring"
             )
-            
+        )
+    
+    # Ensure high-risk analyses always have a catch-all if specifics are thin
+    if not [i for i in insights if i.priority in (RecommendationPriority.HIGH, RecommendationPriority.CRITICAL)] \
+       and severity in (RiskSeverity.HIGH, RiskSeverity.CRITICAL):
+        insights.append(
+            ActionableInsight(
+                title="Enhanced Security Review",
+                reason="Elevated overall risk detected. Perform a manual security and logic audit before merging this deployment.",
+                priority=RecommendationPriority.HIGH,
+                action_type="review"
+            )
+        )
+
     # Priority sorting mapping
     priority_order = {
         RecommendationPriority.CRITICAL: 0,
@@ -86,5 +141,7 @@ def generate_recommendations(
         RecommendationPriority.LOW: 3
     }
     
-    insights.sort(key=lambda x: priority_order[x.priority])
-    return insights
+    insights.sort(key=lambda x: priority_order.get(x.priority, 3))
+    
+    # Cap at 5 recommendations to avoid UI clutter
+    return insights[:5]

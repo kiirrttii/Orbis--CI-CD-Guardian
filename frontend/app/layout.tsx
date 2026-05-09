@@ -9,26 +9,15 @@ import './globals.css'
 const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
+import { APP_NAME, APP_DESCRIPTION, SEO_CONFIG } from '@/lib/config'
+
 export const metadata: Metadata = {
-  title: 'RiskOps AI - AI Risk Intelligence for CI/CD',
-  description: 'Enterprise AI-powered risk intelligence platform for DevOps pipelines with SHAP explainability',
+  title: SEO_CONFIG.title,
+  description: SEO_CONFIG.description,
   generator: 'v0.app',
   icons: {
-    icon: [
-      {
-        url: '/icon-light-32x32.png',
-        media: '(prefers-color-scheme: light)',
-      },
-      {
-        url: '/icon-dark-32x32.png',
-        media: '(prefers-color-scheme: dark)',
-      },
-      {
-        url: '/icon.svg',
-        type: 'image/svg+xml',
-      },
-    ],
-    apple: '/apple-icon.png',
+    icon: '/icon.png',
+    apple: '/icon.png',
   },
 }
 
