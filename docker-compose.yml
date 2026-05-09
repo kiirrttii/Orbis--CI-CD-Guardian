@@ -1,0 +1,76 @@
+version: "3.9"
+
+services:
+  # ── PostgreSQL ──────────────────────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    container_name: cicd_risk_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-cicd_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cicd_password}
+      POSTGRES_DB: ${POSTGRES_DB:-cicd_risk_db}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-cicd_user} -d ${POSTGRES_DB:-cicd_risk_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Backend API ─────────────────────────────────────────────────────────────
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cicd_risk_api
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    environment:
+      POSTGRES_HOST: db
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      # Hot-reload in dev (remove in production)
+      - ./backend/app:/app/app
+
+  # ── Alembic migrations (run-once job) ────────────────────────────────────────
+  migrate:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cicd_risk_migrate
+    env_file:
+      - ./backend/.env
+    environment:
+      POSTGRES_HOST: db
+    command: >
+      sh -c "alembic upgrade head"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  # ── Frontend (Next.js) ──────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: cicd_risk_frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:
+    driver: local

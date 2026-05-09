@@ -1,0 +1,8 @@
+# Production dependencies — extends base.txt
+-r base.txt
+
+# Gunicorn for production serving
+gunicorn==22.0.0
+
+# Security
+cryptography==42.0.8         # for token encryption (Phase 2)

@@ -1,0 +1,20 @@
+[
+  {
+    "id": "jenkins-run-9876",
+    "status": "SUCCESS",
+    "repository_id": "repo-222",
+    "duration_ms": 60000,
+    "metrics": {
+      "LOC": 0.20,
+      "CYCLO": 0.15,
+      "LENGTH": 0.25,
+      "VOLUME": 0.20,
+      "DIFFICULTY": 0.30,
+      "INT_FAN_IN": 0.10,
+      "INT_FAN_OUT": 0.20,
+      "NUM_OPERATORS": 0.15,
+      "NUM_OPERANDS": 0.18,
+      "BRANCH_COUNT": 0.10
+    }
+  }
+]

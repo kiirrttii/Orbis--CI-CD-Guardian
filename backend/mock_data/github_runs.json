@@ -1,0 +1,40 @@
+[
+  {
+    "id": "gh-run-12345",
+    "status": "completed",
+    "conclusion": "success",
+    "repository_id": "repo-111",
+    "duration_ms": 45000,
+    "metrics": {
+      "LOC": 0.45,
+      "CYCLO": 0.30,
+      "LENGTH": 0.55,
+      "VOLUME": 0.60,
+      "DIFFICULTY": 0.72,
+      "INT_FAN_IN": 0.15,
+      "INT_FAN_OUT": 0.25,
+      "NUM_OPERATORS": 0.40,
+      "NUM_OPERANDS": 0.38,
+      "BRANCH_COUNT": 0.50
+    }
+  },
+  {
+    "id": "gh-run-12346",
+    "status": "completed",
+    "conclusion": "failure",
+    "repository_id": "repo-111",
+    "duration_ms": 12000,
+    "metrics": {
+      "LOC": 0.85,
+      "CYCLO": 0.90,
+      "LENGTH": 0.80,
+      "VOLUME": 0.85,
+      "DIFFICULTY": 0.95,
+      "INT_FAN_IN": 0.65,
+      "INT_FAN_OUT": 0.85,
+      "NUM_OPERATORS": 0.90,
+      "NUM_OPERANDS": 0.88,
+      "BRANCH_COUNT": 0.95
+    }
+  }
+]
