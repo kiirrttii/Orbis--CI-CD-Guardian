@@ -48,8 +48,11 @@ def generate_recommendations(
             if contrib.feature == "CYCLO":
                 insights.append(
                     ActionableInsight(
-                        title="Reduce Logic Branching",
-                        reason=f"Cyclomatic complexity ({contrib.impact_percent}% impact) is high. Complex branching increases the likelihood of edge-case bugs. Consider extracting sub-functions.",
+                        title="Reduce Logic Complexity",
+                        explanation="The workflow contains functions with high branching complexity (e.g., too many if/else statements or loops).",
+                        impact="High logic complexity increases maintenance difficulty, makes the code harder to read, and elevates the risk of deployment instability.",
+                        suggested_action="Consider splitting complex logic into smaller, reusable functions to improve readability and testability.",
+                        triggered_by=["Logic Complexity", f"Impact: {contrib.impact_percent}%"],
                         priority=prio,
                         action_type="refactor"
                     )
@@ -58,7 +61,10 @@ def generate_recommendations(
                 insights.append(
                     ActionableInsight(
                         title="Consolidate Execution Paths",
-                        reason=f"The codebase has an elevated branch density ({contrib.impact_percent}% impact). Consolidate logic to ensure full test coverage of all paths.",
+                        explanation="The codebase has an elevated density of execution paths, meaning there are many different ways the code can flow.",
+                        impact="Having too many branches makes it nearly impossible to achieve full test coverage, increasing the risk of unexpected bugs in production.",
+                        suggested_action="Consolidate overlapping logic and review test cases to ensure all critical execution paths are properly covered.",
+                        triggered_by=["Branch Density", f"Impact: {contrib.impact_percent}%"],
                         priority=prio,
                         action_type="testing"
                     )
@@ -67,7 +73,10 @@ def generate_recommendations(
                 insights.append(
                     ActionableInsight(
                         title="Simplify Code Interactions",
-                        reason=f"Halstead difficulty ({contrib.impact_percent}% impact) suggests high cognitive load. Simplify operator/operand interactions to reduce maintenance risk.",
+                        explanation="The ratio of unique operators to operands is high, indicating high cognitive load for developers trying to understand the code.",
+                        impact="Hard-to-read code leads to a steeper learning curve for new developers and a higher likelihood of introducing defects during maintenance.",
+                        suggested_action="Simplify operator interactions, use descriptive variable names, and break down dense algorithmic sections.",
+                        triggered_by=["Cognitive Load", f"Impact: {contrib.impact_percent}%"],
                         priority=prio,
                         action_type="review"
                     )
@@ -76,7 +85,10 @@ def generate_recommendations(
                 insights.append(
                     ActionableInsight(
                         title="Modularize Large Files",
-                        reason=f"Code volume ({contrib.impact_percent}% impact) is a significant risk driver. Large monolithic components are difficult to audit and more prone to regressions.",
+                        explanation="The volume of code in single files or functions is significantly higher than standard thresholds.",
+                        impact="Large monolithic components are difficult to audit, harder to test, and exponentially more prone to regressions during updates.",
+                        suggested_action="Extract separate responsibilities into their own modules or files to reduce volume and improve modularity.",
+                        triggered_by=["Code Volume", f"Impact: {contrib.impact_percent}%"],
                         priority=prio,
                         action_type="refactor"
                     )
@@ -84,8 +96,11 @@ def generate_recommendations(
             elif contrib.feature == "INT_FAN_OUT":
                 insights.append(
                     ActionableInsight(
-                        title="Reduce Module Coupling",
-                        reason=f"High fan-out ({contrib.impact_percent}% impact) indicates excessive external dependencies. Decouple components to improve system resilience.",
+                        title="Reduce Module Dependency Spread",
+                        explanation="This module relies on a large number of external components or services to function.",
+                        impact="High dependency spread (Fan-Out) creates tight coupling. If any of those external dependencies change or fail, this module will likely break.",
+                        suggested_action="Decouple components where possible. Consider using interfaces, dependency injection, or an event-driven architecture.",
+                        triggered_by=["External Dependencies", f"Impact: {contrib.impact_percent}%"],
                         priority=prio,
                         action_type="refactor"
                     )
@@ -93,8 +108,11 @@ def generate_recommendations(
             elif contrib.feature == "INT_FAN_IN":
                 insights.append(
                     ActionableInsight(
-                        title="Critical Dependency Audit",
-                        reason=f"High fan-in ({contrib.impact_percent}% impact) identifies this as a core module. Changes here are high-stakes; ensure thorough integration testing.",
+                        title="Audit Core Dependency Interfaces",
+                        explanation="This module is heavily depended upon by many other components within the system.",
+                        impact="Because it is a core module, any changes made here have high stakes and a massive blast radius if something goes wrong.",
+                        suggested_action="Ensure rigorous integration testing before merging. Implement backward-compatible changes to prevent downstream breakages.",
+                        triggered_by=["Core Module Indicator", f"Impact: {contrib.impact_percent}%"],
                         priority=prio,
                         action_type="testing"
                     )
@@ -102,8 +120,11 @@ def generate_recommendations(
             elif contrib.feature == "VOLUME":
                 insights.append(
                     ActionableInsight(
-                        title="Information Density Review",
-                        reason=f"High code volume ({contrib.impact_percent}% impact) may obscure logic errors. Perform a focused peer-review of the implementation details.",
+                        title="Review Information Density",
+                        explanation="The codebase has a high overall information volume, packing complex logic into dense spaces.",
+                        impact="High density may obscure subtle logic errors, making them easily missed during standard code reviews.",
+                        suggested_action="Perform a focused, deliberate peer-review of the implementation details, potentially using pair-programming.",
+                        triggered_by=["Information Density", f"Impact: {contrib.impact_percent}%"],
                         priority=prio,
                         action_type="review"
                     )
@@ -115,7 +136,10 @@ def generate_recommendations(
         insights.append(
             ActionableInsight(
                 title="Maintain Current Standards",
-                reason="Overall risk is low. Current code metrics align with stability best practices. Continue monitoring trends.",
+                explanation="The analyzed code metrics align closely with industry stability best practices.",
+                impact="Keeping risk low ensures smooth deployments, minimal production incidents, and high engineering velocity.",
+                suggested_action="Continue monitoring trends. No immediate refactoring or mitigation is required for this deployment.",
+                triggered_by=["Overall Stability"],
                 priority=RecommendationPriority.LOW,
                 action_type="monitoring"
             )
@@ -126,8 +150,11 @@ def generate_recommendations(
        and severity in (RiskSeverity.HIGH, RiskSeverity.CRITICAL):
         insights.append(
             ActionableInsight(
-                title="Enhanced Security Review",
-                reason="Elevated overall risk detected. Perform a manual security and logic audit before merging this deployment.",
+                title="Enhanced Security & Logic Review",
+                explanation="An elevated overall operational risk was detected across the deployment profile.",
+                impact="Proceeding without mitigation carries a significant risk of deployment failure or critical runtime regressions.",
+                suggested_action="Perform a manual security and logic audit of the latest changes before merging this deployment.",
+                triggered_by=["Aggregated Risk Score"],
                 priority=RecommendationPriority.HIGH,
                 action_type="review"
             )

@@ -125,10 +125,23 @@ export function AnalysisResults({ result }: AnalysisResultsProps) {
                       </span>
                       <h4 className="font-semibold text-foreground">{rec.title}</h4>
                     </div>
-                    <p className="text-sm text-muted-foreground mb-3">{rec.reason}</p>
+                    <div className="space-y-3 mb-4">
+                      <div>
+                        <p className="text-xs font-semibold text-foreground mb-1">Explanation</p>
+                        <p className="text-sm text-muted-foreground">{rec.explanation}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold text-foreground mb-1">Impact</p>
+                        <p className="text-sm text-muted-foreground">{rec.impact}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold text-foreground mb-1">Action</p>
+                        <p className="text-sm text-muted-foreground">{rec.suggested_action}</p>
+                      </div>
+                    </div>
                     <div className="flex gap-2">
                       <span className="text-xs bg-secondary text-secondary-foreground px-2 py-1 rounded-md border border-border">
-                        Action: {rec.action_type}
+                        Type: {rec.action_type}
                       </span>
                     </div>
                   </div>

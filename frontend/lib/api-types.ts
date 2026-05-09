@@ -54,10 +54,15 @@ export interface AnalysisResponse {
   recommendations: ActionableInsight[]
 }
 
+export type RecommendationPriority = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW'
+
 export interface ActionableInsight {
   title: string
-  reason: string
-  priority: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW'
+  explanation: string
+  impact: string
+  suggested_action: string
+  triggered_by: string[]
+  priority: RecommendationPriority
   action_type: string
 }
 

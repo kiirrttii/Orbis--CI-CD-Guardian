@@ -187,76 +187,104 @@ export const mockActivityFeed: ActivityFeedItem[] = [
   },
 ]
 
-export const mockRecommendations: Recommendation[] = [
+export interface MockRecommendation {
+  id: string;
+  title: string;
+  explanation: string;
+  impact: string;
+  suggested_action: string;
+  triggered_by: string[];
+  action_type: string;
+  severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+  priority: number;
+}
+
+export const mockRecommendations: MockRecommendation[] = [
   {
     id: '1',
-    title: 'Reduce Cyclomatic Complexity',
-    reason: 'The authentication service has complex decision trees with 28 branches',
+    title: 'Reduce Logic Complexity',
+    explanation: 'The authentication service has complex decision trees with 28 branches.',
+    impact: 'High logic complexity increases maintenance difficulty, makes the code harder to read, and elevates the risk of deployment instability.',
+    suggested_action: 'Consider splitting complex logic into smaller, reusable functions to improve readability and testability.',
+    triggered_by: ['Logic Complexity', 'Impact: 18%'],
     action_type: 'refactor',
-    related_feature: 'CYCLO',
     severity: 'CRITICAL',
     priority: 1,
   },
   {
     id: '2',
-    title: 'Split Large Functions',
-    reason: 'Several functions exceed 600 lines, impacting maintainability',
+    title: 'Modularize Large Files',
+    explanation: 'Several functions exceed 600 lines, packing complex logic into dense spaces.',
+    impact: 'Large monolithic components are difficult to audit, harder to test, and exponentially more prone to regressions during updates.',
+    suggested_action: 'Extract separate responsibilities into their own modules or files to reduce volume and improve modularity.',
+    triggered_by: ['Code Volume', 'Impact: 15%'],
     action_type: 'refactor',
-    related_feature: 'LENGTH',
     severity: 'HIGH',
     priority: 2,
   },
   {
     id: '3',
-    title: 'Add Unit Tests',
-    reason: 'Test coverage is below 60% for critical paths',
-    action_type: 'optimize',
-    related_feature: 'test_coverage',
+    title: 'Consolidate Execution Paths',
+    explanation: 'Test coverage is below 60% for critical paths with elevated branch density.',
+    impact: 'Having too many untested branches makes it nearly impossible to achieve full test coverage, increasing the risk of unexpected bugs in production.',
+    suggested_action: 'Consolidate overlapping logic and review test cases to ensure all critical execution paths are properly covered.',
+    triggered_by: ['Branch Density'],
+    action_type: 'testing',
     severity: 'HIGH',
     priority: 3,
   },
   {
     id: '4',
-    title: 'Reduce Coupling',
-    reason: 'Payment service depends on 12 external modules',
+    title: 'Reduce Module Dependency Spread',
+    explanation: 'Payment service depends on 12 external modules to function.',
+    impact: 'High dependency spread creates tight coupling. If any of those external dependencies change or fail, this module will likely break.',
+    suggested_action: 'Decouple components where possible. Consider using interfaces or an event-driven architecture.',
+    triggered_by: ['External Dependencies', 'Impact: 10%'],
     action_type: 'refactor',
-    related_feature: 'INT_FAN_OUT',
     severity: 'MEDIUM',
     priority: 4,
   },
   {
     id: '5',
-    title: 'Add Documentation',
-    reason: 'Complex API endpoints lack proper documentation',
+    title: 'Simplify Code Interactions',
+    explanation: 'Complex API endpoints lack proper documentation and have high cognitive load.',
+    impact: 'Hard-to-read code leads to a steeper learning curve for new developers and a higher likelihood of introducing defects during maintenance.',
+    suggested_action: 'Simplify operator interactions, use descriptive variable names, and add comprehensive docstrings.',
+    triggered_by: ['Cognitive Load'],
     action_type: 'document',
-    related_feature: 'documentation',
     severity: 'MEDIUM',
     priority: 5,
   },
   {
     id: '6',
     title: 'Optimize Database Queries',
-    reason: 'Several N+1 query patterns detected',
+    explanation: 'Several N+1 query patterns were detected during data retrieval.',
+    impact: 'Inefficient database queries will rapidly degrade system performance under heavy load.',
+    suggested_action: 'Use batch fetching or join queries to reduce the total number of database calls.',
+    triggered_by: ['Database Operations'],
     action_type: 'optimize',
-    related_feature: 'database_queries',
     severity: 'MEDIUM',
     priority: 6,
   },
   {
     id: '7',
     title: 'Fix Performance Bottleneck',
-    reason: 'Caching layer could reduce latency by 40%',
+    explanation: 'Caching layer is underutilized, which could reduce latency by 40%.',
+    impact: 'High latency negatively impacts the user experience and increases infrastructure costs.',
+    suggested_action: 'Implement Redis or Memcached for frequently accessed, immutable data points.',
+    triggered_by: ['Performance Analysis'],
     action_type: 'optimize',
-    related_feature: 'performance',
     severity: 'MEDIUM',
     priority: 7,
   },
   {
     id: '8',
     title: 'Improve Error Handling',
-    reason: 'Several exception handlers could be more specific',
+    explanation: 'Several exception handlers are overly broad (e.g., catching generic Exceptions).',
+    impact: 'Catching broad exceptions masks underlying systemic failures and makes debugging production incidents extremely difficult.',
+    suggested_action: 'Implement specific exception catching and ensure error logs contain sufficient context.',
+    triggered_by: ['Error Handling'],
     action_type: 'bug_fix',
-    related_feature: 'error_handling',
     severity: 'LOW',
     priority: 8,
   },

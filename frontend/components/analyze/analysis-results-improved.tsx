@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { Card } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
-import { Download, FileJson, Sheet, CheckCircle, Loader } from 'lucide-react'
+import { Download, FileJson, Sheet, CheckCircle, Loader, ThumbsUp } from 'lucide-react'
 import { RiskGauge } from './risk-gauge'
 import { SHAPMini } from './shap-mini'
 import type { AnalysisResponse } from '@/lib/api-types'
@@ -248,6 +248,20 @@ export function AnalysisResults({ result, isAnalyzing }: AnalysisResultsProps) {
 
         {/* Recommendations Tab */}
         <TabsContent value="recommendations" className="space-y-4">
+          <Card className="p-5 bg-primary/5 border border-primary/20 mb-6">
+            <div className="flex items-start gap-4">
+              <div className="p-2 bg-primary/10 rounded-full text-primary mt-1">
+                <ThumbsUp className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-foreground mb-1.5">Intelligent Operational Advisor</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  The insights below translate complex risk signals into practical engineering advice. Our hybrid intelligence engine specifically identified these actionable steps to help you mitigate deployment risks, improve code maintainability, and ensure stable builds.
+                </p>
+              </div>
+            </div>
+          </Card>
+
           {result && result.recommendations.length > 0 ? (
             result.recommendations.map((rec, index) => (
               <Card key={index} className="p-4 border-l-4 border-l-primary/50 bg-card hover:bg-muted/10 transition-colors">
@@ -264,14 +278,43 @@ export function AnalysisResults({ result, isAnalyzing }: AnalysisResultsProps) {
                       </span>
                       <h4 className="font-bold text-foreground leading-tight">{rec.title}</h4>
                     </div>
-                    <p className="text-sm text-muted-foreground leading-relaxed mb-4">{rec.reason}</p>
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-1.5 px-2 py-1 bg-secondary rounded-md border border-border">
-                        <Loader className="w-3 h-3 text-muted-foreground" />
-                        <span className="text-[11px] font-semibold text-foreground capitalize">
-                          Action: {rec.action_type}
+                    <div className="space-y-4 mb-5">
+                      <div className="bg-card border border-border/50 p-3.5 rounded-lg shadow-sm">
+                        <p className="text-[13px] font-bold text-foreground mb-1">What this means</p>
+                        <p className="text-[13px] text-muted-foreground leading-relaxed">{rec.explanation}</p>
+                      </div>
+                      
+                      <div className="bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-900/30 p-3.5 rounded-lg shadow-sm">
+                        <p className="text-[13px] font-bold text-orange-800 dark:text-orange-400 mb-1">Why it matters</p>
+                        <p className="text-[13px] text-orange-900/80 dark:text-orange-200/80 leading-relaxed">{rec.impact}</p>
+                      </div>
+                      
+                      <div className="bg-primary/5 border border-primary/20 p-3.5 rounded-lg shadow-sm">
+                        <p className="text-[13px] font-bold text-primary mb-1">Suggested Action</p>
+                        <p className="text-[13px] text-foreground leading-relaxed">{rec.suggested_action}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-3">
+                      <div className="flex items-center gap-1.5 px-2 py-1 bg-secondary/20 rounded-md border border-border/50">
+                        <Loader className="w-3.5 h-3.5 text-secondary-foreground" />
+                        <span className="text-[11px] font-semibold text-secondary-foreground capitalize">
+                          Type: {rec.action_type}
                         </span>
                       </div>
+                      
+                      {rec.triggered_by && rec.triggered_by.length > 0 && (
+                        <div className="flex items-center gap-2 px-2.5 py-1 bg-muted/50 rounded-md border border-border/50">
+                          <span className="text-[11px] font-semibold text-muted-foreground">Triggered By:</span>
+                          <div className="flex gap-1.5">
+                            {rec.triggered_by.map((trigger, i) => (
+                              <span key={i} className="text-[11px] bg-background px-1.5 py-0.5 rounded shadow-sm border border-border text-foreground">
+                                {trigger}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
