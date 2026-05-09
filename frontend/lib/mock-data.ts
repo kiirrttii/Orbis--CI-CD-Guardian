@@ -1,17 +1,10 @@
 import type {
   DeploymentHistory,
   TelemetryData,
-  ActivityFeedItem,
-  SummaryStats,
   Recommendation,
 } from './api-types'
 
-export const mockSummaryStats: SummaryStats = {
-  total_runs: 1248,
-  critical_deployments: 12,
-  average_risk_score: 42.3,
-  active_alerts: 5,
-}
+
 
 export const mockDeploymentHistory: DeploymentHistory[] = [
   {
@@ -144,48 +137,7 @@ export const mockTelemetryData: TelemetryData[] = [
   },
 ]
 
-export const mockActivityFeed: ActivityFeedItem[] = [
-  {
-    id: '1',
-    type: 'analysis',
-    title: 'High Risk Analysis Completed',
-    description: 'auth-service deployment flagged with 78% risk score',
-    severity: 'CRITICAL',
-    timestamp: "2024-05-09T12:10:00Z",
-  },
-  {
-    id: '2',
-    type: 'deployment',
-    title: 'Deployment Successful',
-    description: 'frontend-app v2.4.1 deployed to production',
-    severity: 'LOW',
-    timestamp: "2024-05-09T12:00:00Z",
-  },
-  {
-    id: '3',
-    type: 'alert',
-    title: 'Performance Alert',
-    description: 'Response time exceeded threshold on API service',
-    severity: 'HIGH',
-    timestamp: "2024-05-09T11:45:00Z",
-  },
-  {
-    id: '4',
-    type: 'analysis',
-    title: 'Low Risk Analysis',
-    description: 'monitoring-service deployment analysis complete',
-    severity: 'LOW',
-    timestamp: "2024-05-09T11:15:00Z",
-  },
-  {
-    id: '5',
-    type: 'deployment',
-    title: 'Rollback Initiated',
-    description: 'payment-processor reverted to v1.8.2',
-    severity: 'HIGH',
-    timestamp: "2024-05-09T10:15:00Z",
-  },
-]
+
 
 export interface MockRecommendation {
   id: string;

@@ -41,10 +41,15 @@ async def list_history(
         # Note: In a production app, we'd use a more efficient mapper or partial schema
         target_name = "Manual Analysis"
         if pred.workflow_run:
-            if pred.workflow_run.repository:
-                target_name = pred.workflow_run.repository.name
-            else:
-                target_name = pred.workflow_run.workflow_name
+            target_name = pred.workflow_run.workflow_name
+            if hasattr(pred.workflow_run, 'repository_id') and pred.workflow_run.repository_id:
+                from app.models.repository import Repository
+                from sqlalchemy import select
+                repo_stmt = select(Repository).where(Repository.id == pred.workflow_run.repository_id)
+                repo_result = await db.execute(repo_stmt)
+                repo = repo_result.scalars().first()
+                if repo:
+                    target_name = repo.name
 
         results.append(
             IntelligenceResponse(
@@ -92,10 +97,37 @@ async def get_history_detail(
         
     target_name = "Manual Analysis"
     if pred.workflow_run:
-        if pred.workflow_run.repository:
-            target_name = pred.workflow_run.repository.name
-        else:
-            target_name = pred.workflow_run.workflow_name
+        target_name = pred.workflow_run.workflow_name
+        if hasattr(pred.workflow_run, 'repository_id') and pred.workflow_run.repository_id:
+            from app.models.repository import Repository
+            from sqlalchemy import select
+            repo_stmt = select(Repository).where(Repository.id == pred.workflow_run.repository_id)
+            repo_result = await db.execute(repo_stmt)
+            repo = repo_result.scalars().first()
+            if repo:
+                target_name = repo.name
+
+    def parse_recommendation(rec):
+        desc = rec.description or ""
+        parts = desc.split("\nImpact: ")
+        explanation = parts[0] if parts else "No explanation available"
+        impact = "N/A"
+        action = "N/A"
+        if len(parts) > 1:
+            impact_parts = parts[1].split("\nAction: ")
+            impact = impact_parts[0]
+            if len(impact_parts) > 1:
+                action = impact_parts[1]
+                
+        return {
+            "title": rec.title,
+            "explanation": explanation,
+            "impact": impact,
+            "suggested_action": action,
+            "triggered_by": [],
+            "priority": rec.priority,
+            "action_type": rec.action_type or "general",
+        }
 
     # Manual mapping for now to ensure all fields are populated correctly
     # In a real app, use a proper mapping layer or Pydantic.from_orm
@@ -124,15 +156,5 @@ async def get_history_detail(
                 "interpretation": fc.interpretation
             } for fc in pred.feature_contributions
         ],
-        recommendations=[
-            # Map Recommendation model to Recommendation schema
-            {
-                "id": str(rec.id),
-                "title": rec.title,
-                "reason": rec.description,
-                "action_type": rec.action_type,
-                "priority": rec.priority,
-                "status": rec.status
-            } for rec in pred.recommendations
-        ]
+        recommendations=[parse_recommendation(rec) for rec in pred.recommendations]
     )

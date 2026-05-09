@@ -161,18 +161,3 @@ export interface IntegrationInfo {
   health?: 'healthy' | 'degraded' | 'error'
 }
 
-export interface ActivityFeedItem {
-  id: string
-  type: 'analysis' | 'deployment' | 'alert'
-  title: string
-  description: string
-  severity: SeverityLevel
-  timestamp: string
-}
-
-export interface SummaryStats {
-  total_runs: number
-  critical_deployments: number
-  average_risk_score: number
-  active_alerts: number
-}

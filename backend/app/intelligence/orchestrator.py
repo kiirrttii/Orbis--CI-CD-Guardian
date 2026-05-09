@@ -134,7 +134,7 @@ async def analyze_and_persist(
         rec_models.append(
             Recommendation(
                 title=rec.title,
-                description=rec.reason,
+                description=f"{rec.explanation}\nImpact: {rec.impact}\nAction: {rec.suggested_action}",
                 action_type=rec.action_type,
                 priority=rec.priority,
                 status=RecommendationStatus.GENERATED,
@@ -151,11 +151,15 @@ async def analyze_and_persist(
     # 5. Assembly
     target_name = "Manual Analysis"
     if run:
-        if hasattr(run, 'repository') and run.repository:
-            target_name = run.repository.name
-        else:
-            target_name = run.workflow_name
-
+        target_name = run.workflow_name
+        if hasattr(run, 'repository_id') and run.repository_id:
+            from app.models.repository import Repository
+            from sqlalchemy import select
+            repo_stmt = select(Repository).where(Repository.id == run.repository_id)
+            repo_result = await session.execute(repo_stmt)
+            repo = repo_result.scalars().first()
+            if repo:
+                target_name = repo.name
     return IntelligenceResponse(
         workflow_run_id=workflow_run_id,
         prediction_id=persisted_prediction.id,
