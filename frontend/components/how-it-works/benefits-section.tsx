@@ -35,35 +35,36 @@ import { APP_NAME } from '@/lib/config'
 export function BenefitsSection() {
   return (
     <div className="max-w-4xl mx-auto">
-      <h2 className="text-3xl font-bold text-foreground mb-4 text-center">Why {APP_NAME}</h2>
-      <p className="text-center text-muted-foreground mb-12 text-lg">
-        Transform your CI/CD pipeline with intelligent risk management
-      </p>
+      <div className="mb-16">
+        <h2 className="text-3xl md:text-4xl font-black mb-6 text-center text-transparent bg-clip-text bg-gradient-to-r from-foreground to-primary tracking-tight">
+          Why {APP_NAME}
+        </h2>
+        <p className="text-center text-muted-foreground text-lg md:text-xl">
+          Transform your CI/CD pipeline with intelligent risk management
+        </p>
+      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 relative z-10">
         {benefits.map((benefit) => (
-          <div key={benefit.title} className="flex gap-4">
-            <div className="flex-shrink-0">
-              <CheckCircle className="w-6 h-6 text-status-low mt-1" />
+          <Card key={benefit.title} className="p-6 bg-card/40 backdrop-blur-md border border-border/50 hover:border-primary/30 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group overflow-hidden relative">
+            {/* Subtle Top Gradient Line */}
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary/50 to-accent/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            
+            <div className="flex gap-4 items-start">
+              <div className="flex-shrink-0 mt-1">
+                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors duration-300">
+                  <CheckCircle className="w-5 h-5 text-primary" />
+                </div>
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-foreground mb-2">{benefit.title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{benefit.description}</p>
+              </div>
             </div>
-            <div>
-              <h3 className="font-semibold text-foreground mb-1">{benefit.title}</h3>
-              <p className="text-sm text-muted-foreground">{benefit.description}</p>
-            </div>
-          </div>
+          </Card>
         ))}
       </div>
 
-      {/* Call to action */}
-      <div className="mt-12 bg-gradient-to-r from-primary/10 to-accent/10 rounded-lg p-8 text-center">
-        <h3 className="text-2xl font-bold text-foreground mb-2">Ready to get started?</h3>
-        <p className="text-muted-foreground mb-6">
-          Start analyzing your deployments with AI-powered risk intelligence today.
-        </p>
-        <button className="bg-primary text-white px-8 py-3 rounded-lg font-medium hover:bg-primary/90 transition-colors">
-          Start Free Trial
-        </button>
-      </div>
     </div>
   )
 }

@@ -46,20 +46,22 @@ const features = [
 export function FeatureCards() {
   return (
     <div className="max-w-5xl mx-auto">
-      <h2 className="text-3xl font-bold text-foreground mb-12 text-center">Core Features</h2>
+      <h2 className="text-3xl md:text-4xl font-black mb-16 text-center text-transparent bg-clip-text bg-gradient-to-r from-foreground to-primary tracking-tight">
+        Core Features
+      </h2>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 relative z-10">
         {features.map((feature) => {
           const Icon = feature.icon
           return (
-            <Card key={feature.name} className="p-6 hover:shadow-lg transition-shadow">
-              <div className="mb-4">
-                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
-                  <Icon className="w-6 h-6 text-primary" />
+            <Card key={feature.name} className="p-6 bg-card/40 backdrop-blur-md border border-border/50 hover:border-primary/30 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
+              <div className="mb-6">
+                <div className="w-14 h-14 bg-gradient-to-br from-primary/10 to-accent/10 border border-primary/20 rounded-xl flex items-center justify-center group-hover:scale-110 group-hover:shadow-lg group-hover:shadow-primary/20 transition-all duration-300">
+                  <Icon className="w-7 h-7 text-primary" />
                 </div>
               </div>
-              <h3 className="font-semibold text-foreground mb-2">{feature.name}</h3>
-              <p className="text-sm text-muted-foreground">{feature.description}</p>
+              <h3 className="text-xl font-bold text-foreground mb-3">{feature.name}</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
             </Card>
           )
         })}
