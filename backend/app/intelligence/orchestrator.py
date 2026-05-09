@@ -109,6 +109,8 @@ async def analyze_and_persist(
         risk_score=inference_result.risk_score,
         severity=inference_result.severity.value if hasattr(inference_result.severity, 'value') else str(inference_result.severity),
         analysis_type=analysis_type,
+        confidence=inference_result.confidence,
+        confidence_level=inference_result.confidence_level,
         failure_probability=inference_result.probability,
         predicted_label=str(inference_result.prediction)
     )

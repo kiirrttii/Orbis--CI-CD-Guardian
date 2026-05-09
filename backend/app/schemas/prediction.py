@@ -150,6 +150,14 @@ class PredictionResponse(BaseModel):
         default="manual",
         description="Type of analysis performed (e.g., repository, telemetry, metrics)",
     )
+    confidence: float = Field(
+        default=0.0,
+        description="Prediction confidence score [0.0, 1.0]",
+    )
+    confidence_level: str = Field(
+        default="LOW",
+        description="Readable confidence band: LOW | MEDIUM | HIGH",
+    )
     model_version: str = Field(
         default="v1",
         description="Model version tag for traceability",

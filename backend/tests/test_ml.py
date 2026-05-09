@@ -29,16 +29,17 @@ from app.ml.risk_scoring import (
 
 class TestComputeRiskScore:
     def test_zero_probability(self):
-        assert compute_risk_score(0.0) == 0.0
+        assert compute_risk_score(0.0) == 10.0
 
     def test_full_probability(self):
         assert compute_risk_score(1.0) == 100.0
 
     def test_midpoint(self):
-        assert compute_risk_score(0.5) == 50.0
+        assert compute_risk_score(0.5) == 55.0
 
     def test_rounding(self):
-        assert compute_risk_score(0.8253) == 82.53
+        # 10 + (0.8253 * 90) = 10 + 74.277 = 84.277 -> 84.28
+        assert compute_risk_score(0.8253) == 84.28
 
     def test_out_of_range_raises(self):
         with pytest.raises(ValueError):
@@ -73,12 +74,16 @@ class TestClassifySeverity:
 
 class TestScoreAndClassify:
     def test_returns_tuple(self):
-        score, severity = score_and_classify(0.9)
-        assert score == 90.0
-        assert severity == RiskSeverity.CRITICAL
+        score, severity, conf, level = score_and_classify({}, 0.9)
+        # 10 + (0.9 * 90) + refinement (-3.0 if no features)
+        # wait, refinement = (0.9 - 0.5) * 30 = 0.4 * 30 = 12.0
+        # heuristic base = 15.0 (no features)
+        # final = 15 + 12 = 27.0
+        assert score == 27.0
+        assert severity == RiskSeverity.LOW
 
     def test_low_severity(self):
-        _, severity = score_and_classify(0.1)
+        _, severity, _, _ = score_and_classify({}, 0.1)
         assert severity == RiskSeverity.LOW
 
 
@@ -171,8 +176,12 @@ class TestPredictSingle:
 
         assert result.prediction == 1
         assert abs(result.probability - 0.82) < 0.001
-        assert result.risk_score == 82.0
-        assert result.severity == RiskSeverity.CRITICAL
+        # Hybrid score for _sample_payload + 0.82 prob
+        # Heuristic: 15 + 0.5*20 + 0.4*20 + 0.3*15 + 0.5*15 + 0.55*15 + 0.7*15 = 15+10+8+4.5+7.5+8.25+10.5 = 63.75
+        # ML Refinement: (0.82 - 0.5) * 30 = 9.6
+        # Final: 63.75 + 9.6 = 73.35
+        assert result.risk_score == 73.35
+        assert result.severity == RiskSeverity.HIGH
 
     def test_low_probability_gives_low_severity(self):
         from app.ml.predictor import predict_single

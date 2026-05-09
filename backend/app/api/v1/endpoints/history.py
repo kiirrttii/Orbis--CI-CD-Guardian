@@ -57,6 +57,8 @@ async def list_history(
                     risk_score=pred.risk_score,
                     severity=pred.severity,
                     analysis_type=pred.analysis_type,
+                    confidence=pred.confidence,
+                    confidence_level=pred.confidence_level,
                     model_version=pred.model_version,
                     timestamp=pred.created_at
                 ),
@@ -107,6 +109,8 @@ async def get_history_detail(
             risk_score=pred.risk_score,
             severity=pred.severity, 
             analysis_type=pred.analysis_type,
+            confidence=pred.confidence,
+            confidence_level=pred.confidence_level,
             model_version=pred.model_version,
             timestamp=pred.created_at
         ),

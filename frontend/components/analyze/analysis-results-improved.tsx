@@ -175,6 +175,23 @@ export function AnalysisResults({ result, isAnalyzing }: AnalysisResultsProps) {
             </div>
 
             <div>
+              <p className="text-sm text-muted-foreground mb-2">Analysis Confidence</p>
+              <div className="flex items-center gap-2">
+                <span className={cn(
+                  "px-3 py-1 rounded-full text-xs font-black border shadow-sm",
+                  result?.inference.confidence_level === 'HIGH' ? 'bg-green-500/10 text-green-500 border-green-500/20' :
+                  result?.inference.confidence_level === 'MEDIUM' ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' :
+                  'bg-red-500/10 text-red-500 border-red-500/20'
+                )}>
+                  {result?.inference.confidence_level || 'LOW'}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  (Based on {result ? (result.inference.confidence * 100).toFixed(1) : 0}% metric signal)
+                </span>
+              </div>
+            </div>
+
+            <div>
               <p className="text-sm text-muted-foreground mb-2">Analysis Timestamp</p>
               <p className="text-sm text-foreground">
                 {result ? (isMounted ? new Date(result.inference.timestamp).toLocaleString() : 'Loading...') : 'Analyzing...'}
@@ -288,9 +305,9 @@ export function AnalysisResults({ result, isAnalyzing }: AnalysisResultsProps) {
                   <p className="text-2xl font-bold text-foreground">{riskScore}%</p>
                 </div>
                 <div className="p-3 border border-border rounded-lg">
-                  <p className="text-xs text-muted-foreground">Probability</p>
-                  <p className="text-2xl font-bold text-foreground">
-                    {result ? (result.inference.probability * 100).toFixed(1) : 0}%
+                  <p className="text-xs text-muted-foreground">Confidence Level</p>
+                  <p className="text-xl font-bold text-foreground">
+                    {result ? result.inference.confidence_level : 'LOW'}
                   </p>
                 </div>
                 <div className="p-3 border border-border rounded-lg">

@@ -39,6 +39,8 @@ export interface AnalysisResponse {
     risk_score: number
     severity: SeverityLevel
     analysis_type: string
+    confidence: number
+    confidence_level: string
     model_version: string
     timestamp: string
   }

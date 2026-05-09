@@ -43,6 +43,8 @@ class Prediction(BaseModel):
     risk_score: Mapped[float] = mapped_column(Float, nullable=False)          # 0.0–100.0
     severity: Mapped[str] = mapped_column(String(20), nullable=False, default="LOW")
     analysis_type: Mapped[str] = mapped_column(String(50), nullable=False, default="manual")
+    confidence: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    confidence_level: Mapped[str] = mapped_column(String(20), nullable=False, default="LOW")
     failure_probability: Mapped[float] = mapped_column(Float, nullable=False) # 0.0–1.0
     predicted_label: Mapped[str] = mapped_column(String(50), nullable=False)  # "pass" | "fail"
 

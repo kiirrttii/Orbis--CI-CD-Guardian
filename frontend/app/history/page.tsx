@@ -209,9 +209,17 @@ export default function HistoryPage() {
                           <span className="text-[10px] text-muted-foreground font-mono">
                             ID: {item.workflow_run_id.slice(0, 13)}...
                           </span>
-                          <span className="text-[10px] text-muted-foreground mt-1">
-                            Confidence: {(item.inference.probability * 100).toFixed(1)}%
-                          </span>
+                          <div className="flex items-center gap-1.5 mt-1">
+                            <span className="text-[10px] text-muted-foreground">Confidence:</span>
+                            <span className={cn(
+                              "text-[9px] font-black px-1.5 py-0.5 rounded-full border",
+                              item.inference.confidence_level === 'HIGH' ? 'bg-green-500/10 text-green-500 border-green-500/20' :
+                              item.inference.confidence_level === 'MEDIUM' ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' :
+                              'bg-red-500/10 text-red-500 border-red-500/20'
+                            )}>
+                              {item.inference.confidence_level}
+                            </span>
+                          </div>
                         </div>
                       </td>
 

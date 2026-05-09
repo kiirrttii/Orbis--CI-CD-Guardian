@@ -23,16 +23,16 @@ logger = get_logger(__name__)
 
 # Feature interpretation mapping
 FEATURE_INTERPRETATIONS = {
-    "LOC": "Lines of Code (size of deployment surface area)",
-    "CYCLO": "Cyclomatic Complexity (logic branching risk)",
-    "LENGTH": "Program Length (total token volume)",
-    "VOLUME": "Halstead Volume (information content)",
-    "DIFFICULTY": "Halstead Difficulty (testing and maintenance effort)",
-    "INT_FAN_IN": "Internal Fan-in (coupling from other modules)",
-    "INT_FAN_OUT": "Internal Fan-out (dependency on other modules)",
-    "NUM_OPERATORS": "Operator Count (mathematical/logical complexity)",
-    "NUM_OPERANDS": "Operand Count (data manipulation surface)",
-    "BRANCH_COUNT": "Total Branch Count (execution path density)",
+    "LOC": "Code Surface Area (larger deployments require more extensive review)",
+    "CYCLO": "Logic Complexity (deeply nested paths increase logic failure risk)",
+    "LENGTH": "Programmatic Volume (high token density reduces maintainability)",
+    "VOLUME": "Information Content (high density makes manual auditing prone to error)",
+    "DIFFICULTY": "Cognitive Load (complex interactions increase verification effort)",
+    "INT_FAN_IN": "Module Coupling (high stakes due to many dependent components)",
+    "INT_FAN_OUT": "External Dependency Load (increases system fragility/decoupling risk)",
+    "NUM_OPERATORS": "Operation Density (mathematical/logical complexity surface)",
+    "NUM_OPERANDS": "Data Interaction Surface (higher risk of data-flow side effects)",
+    "BRANCH_COUNT": "Decision Point Density (execution path coordination risk)",
 }
 
 class SHAPNotLoadedError(RuntimeError):

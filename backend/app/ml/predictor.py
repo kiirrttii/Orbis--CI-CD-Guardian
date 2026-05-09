@@ -75,7 +75,8 @@ def predict_single(request: PredictionRequest) -> PredictionResponse:
         raise RuntimeError(f"Model inference failed: {exc}") from exc
 
     # ── Risk scoring & severity ────────────────────────────────────────────────
-    risk_score, severity = score_and_classify(probability)
+    feature_dict = request.to_feature_dict()
+    risk_score, severity, confidence, confidence_level = score_and_classify(feature_dict, probability)
 
     logger.info(
         "inference_complete",
@@ -90,6 +91,8 @@ def predict_single(request: PredictionRequest) -> PredictionResponse:
         probability=round(probability, 4),
         risk_score=risk_score,
         severity=severity,
+        confidence=confidence,
+        confidence_level=confidence_level,
         model_version=_MODEL_VERSION,
         # feature_contributions populated in Phase 3 (SHAP)
         feature_contributions=None,
@@ -134,14 +137,17 @@ def predict_batch(request: BatchPredictionRequest) -> BatchPredictionResponse:
 
     # ── Build individual responses ─────────────────────────────────────────────
     responses: list[PredictionResponse] = []
-    for raw_pred, prob in zip(raw_predictions, probabilities):
-        risk_score, severity = score_and_classify(float(prob))
+    for i, (raw_pred, prob) in enumerate(zip(raw_predictions, probabilities)):
+        feature_dict = instances[i].to_feature_dict()
+        risk_score, severity, confidence, confidence_level = score_and_classify(feature_dict, float(prob))
         responses.append(
             PredictionResponse(
                 prediction=int(raw_pred),
                 probability=round(float(prob), 4),
                 risk_score=risk_score,
                 severity=severity,
+                confidence=confidence,
+                confidence_level=confidence_level,
                 model_version=_MODEL_VERSION,
                 feature_contributions=None,
             )
