@@ -65,3 +65,7 @@ Once both servers are running:
 2. You will be redirected to the **Login** screen.
 3. You can create an account via the Sign Up page, or use existing mock credentials if seeded.
 4. Upon successful login, you will land on the **How It Works** onboarding page, where you can explore the architecture before diving into the **Analyze Pipeline** tool!
+<<<<<<< HEAD
+=======
+
+>>>>>>> bbddb2c993e31a8197ed5d7dafa0898d9011e793
