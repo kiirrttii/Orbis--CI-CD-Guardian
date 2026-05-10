@@ -54,8 +54,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.warn('[AuthProvider] Token invalid, clearing session')
         handleAuthFailure()
       }
-    } catch (error) {
-      console.error('[AuthProvider] Verification failed:', error)
+    } catch (error: any) {
+      if (error?.response?.status === 401) {
+        console.warn('[AuthProvider] Token expired or invalid, clearing session.')
+      } else {
+        console.error('[AuthProvider] Verification failed:', error)
+      }
       handleAuthFailure()
     } finally {
       setIsLoading(false)
@@ -107,7 +111,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       router.push('/how-it-works')
       return response
     } catch (error) {
-      console.error('[AuthProvider] Login method failed:', error)
       throw error
     }
   }

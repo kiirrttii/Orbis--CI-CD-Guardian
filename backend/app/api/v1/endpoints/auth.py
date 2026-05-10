@@ -69,8 +69,8 @@ async def login(
     if not user:
         print(f"[Auth] User not found: {request.email}")
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password",
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User does not exist, please sign up",
         )
     
     if not verify_password(request.password, user.hashed_password):

@@ -75,8 +75,6 @@ export function LoginForm() {
       router.push('/how-it-works')
 
     } catch (error: any) {
-      console.error('[LoginForm] LOGIN ERROR:', error)
-
       const message =
         error.response?.data?.detail ||
         'Login failed. Please try again.'
