@@ -29,6 +29,23 @@ export interface AnalysisRequest {
   BRANCH_COUNT: number
 }
 
+// ── Risk Dimensions (additive, optional extension) ───────────────────────────
+
+export interface RiskDimensionResult {
+  score: number      // 0–100
+  grade: string      // A | B | C | D | E
+  summary: string    // Short reasoning sentence
+}
+
+export interface RiskDimensionsPayload {
+  maintainability: RiskDimensionResult
+  deployment_stability: RiskDimensionResult
+  security_exposure: RiskDimensionResult
+  interpretation_summary: string
+}
+
+// ── Analysis Response ─────────────────────────────────────────────────────────
+
 export interface AnalysisResponse {
   workflow_run_id: string
   prediction_id: string
@@ -52,6 +69,8 @@ export interface AnalysisResponse {
     direction: 'increase_risk' | 'decrease_risk'
   }>
   recommendations: ActionableInsight[]
+  // Optional additive extension — present only when backend computes dimensions
+  risk_dimensions?: RiskDimensionsPayload
 }
 
 export type RecommendationPriority = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW'

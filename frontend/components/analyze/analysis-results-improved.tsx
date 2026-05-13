@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Download, FileJson, Sheet, CheckCircle, Loader, ThumbsUp } from 'lucide-react'
 import { RiskGauge } from './risk-gauge'
 import { SHAPMini } from './shap-mini'
+import { RiskDimensionsPanel } from './risk-dimensions-panel'
 import type { AnalysisResponse } from '@/lib/api-types'
 import { cn } from '@/lib/utils'
 
@@ -223,6 +224,11 @@ export function AnalysisResults({ result, isAnalyzing }: AnalysisResultsProps) {
           </div>
         </div>
       </Card>
+
+      {/* Risk Dimensions Panel — additive, renders only when data is present */}
+      {result?.risk_dimensions && (
+        <RiskDimensionsPanel riskDimensions={result.risk_dimensions} />
+      )}
 
       {/* Detailed Analysis Tabs */}
       <Tabs defaultValue="shap" className="w-full">

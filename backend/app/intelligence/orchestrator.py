@@ -16,6 +16,7 @@ from app.schemas.intelligence import IntelligenceResponse
 from app.ml.predictor import predict_single
 from app.explainability.explainer import generate_explanations
 from app.recommendations.engine import generate_recommendations
+from app.ml.risk_dimensions import compute_risk_dimensions
 
 from app.models.prediction import Prediction
 from app.models.feature_contribution import FeatureContribution
@@ -98,7 +99,44 @@ async def analyze_and_persist(
     
     # 3. Recommendations
     recommendations = generate_recommendations(explanations, inference_result.severity)
-    
+
+    # 3.5 Risk Dimensions (additive interpretation layer — fault-tolerant)
+    feature_dict = request.to_feature_dict()
+    risk_dimensions_payload = None
+    try:
+        dims = compute_risk_dimensions(
+            features=feature_dict,
+            overall_risk_score=inference_result.risk_score,
+        )
+        # Convert dataclasses to Pydantic-compatible dicts for schema validation
+        from app.schemas.intelligence import RiskDimensionsPayload, RiskDimensionResult as RDR
+        risk_dimensions_payload = RiskDimensionsPayload(
+            maintainability=RDR(
+                score=dims.maintainability.score,
+                grade=dims.maintainability.grade,
+                summary=dims.maintainability.summary,
+            ),
+            deployment_stability=RDR(
+                score=dims.deployment_stability.score,
+                grade=dims.deployment_stability.grade,
+                summary=dims.deployment_stability.summary,
+            ),
+            security_exposure=RDR(
+                score=dims.security_exposure.score,
+                grade=dims.security_exposure.grade,
+                summary=dims.security_exposure.summary,
+            ),
+            interpretation_summary=dims.interpretation_summary,
+        )
+        logger.info("risk_dimensions_computed", grades={
+            "maintainability": dims.maintainability.grade,
+            "deployment_stability": dims.deployment_stability.grade,
+            "security_exposure": dims.security_exposure.grade,
+        })
+    except Exception as exc:
+        logger.warning("risk_dimensions_failed", error=str(exc))
+        risk_dimensions_payload = None
+
     # 4. Persistence
     intelligence_repo = IntelligenceRepository(session)
     
@@ -174,5 +212,6 @@ async def analyze_and_persist(
             timestamp=persisted_prediction.created_at
         ),
         explainability=explanations,
-        recommendations=recommendations
+        recommendations=recommendations,
+        risk_dimensions=risk_dimensions_payload,
     )
