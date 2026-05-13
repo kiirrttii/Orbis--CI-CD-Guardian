@@ -26,6 +26,16 @@ import { exportToPDF, exportToCSV, exportToJSON } from '@/lib/export-utils'
 import { cn } from '@/lib/utils'
 import type { AnalysisResponse } from '@/lib/api-types'
 
+const formatRepoLabel = (name: string) => {
+  if (!name) return 'Unknown Repository'
+  return name
+    .replace('https://github.com/', '')
+    .replace('http://github.com/', '')
+    .replace('https://www.github.com/', '')
+    .replace('http://www.github.com/', '')
+    .replace('upload://', '')
+}
+
 // Type for session-based download tracking
 interface SessionDownload {
   id: string
@@ -122,7 +132,7 @@ export default function ReportsPage() {
                   >
                     {history.map((a) => (
                       <option key={a.prediction_id} value={a.prediction_id}>
-                        {a.target_name} — {a.inference.severity} ({Math.round(a.inference.risk_score)}/100) — {new Date(a.inference.timestamp).toLocaleDateString()}
+                        {formatRepoLabel(a.target_name)} — {a.inference.severity} ({Math.round(a.inference.risk_score)}/100) — {new Date(a.inference.timestamp).toLocaleDateString()}
                       </option>
                     ))}
                   </select>

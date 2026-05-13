@@ -14,6 +14,16 @@ import { cn } from '@/lib/utils'
 
 const severityLevels: SeverityLevel[] = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']
 
+const formatRepoLabel = (name: string) => {
+  if (!name) return 'Unknown Repository'
+  return name
+    .replace('https://github.com/', '')
+    .replace('http://github.com/', '')
+    .replace('https://www.github.com/', '')
+    .replace('http://www.github.com/', '')
+    .replace('upload://', '')
+}
+
 function getRelativeTime(date: Date | string) {
   const d = typeof date === 'string' ? new Date(date) : date
   if (isNaN(d.getTime())) return 'Unknown time'
@@ -184,7 +194,7 @@ export default function HistoryPage() {
                             ) : (
                               <CheckCircle2 className="w-4 h-4 text-status-low" />
                             )}
-                            {item.target_name}
+                            {formatRepoLabel(item.target_name)}
                           </span>
                         </div>
                       </td>
