@@ -153,7 +153,8 @@ async def analyze_and_persist(
         confidence=inference_result.confidence,
         confidence_level=inference_result.confidence_level,
         failure_probability=inference_result.probability,
-        predicted_label=str(inference_result.prediction)
+        predicted_label=str(inference_result.prediction),
+        raw_output={"risk_dimensions": risk_dimensions_payload.model_dump()} if risk_dimensions_payload else None
     )
     
     fc_models = []

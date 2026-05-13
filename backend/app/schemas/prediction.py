@@ -12,7 +12,7 @@ from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.ml.risk_scoring import RiskSeverity
+from app.core.risk_policy import RiskSeverity
 
 
 # ---------------------------------------------------------------------------

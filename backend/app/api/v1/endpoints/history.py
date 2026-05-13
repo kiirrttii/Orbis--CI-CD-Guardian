@@ -14,6 +14,7 @@ from app.models.user import User
 from app.repositories.intelligence_repo import IntelligenceRepository
 from app.schemas.intelligence import IntelligenceResponse
 from app.schemas.prediction import PredictionResponse
+from app.utils.risk_dimensions_serializer import deserialize_risk_dimensions
 
 router = APIRouter()
 
@@ -68,7 +69,8 @@ async def list_history(
                     timestamp=pred.created_at
                 ),
                 explainability=[], # Omit details in list view for performance
-                recommendations=[] 
+                recommendations=[],
+                risk_dimensions=deserialize_risk_dimensions(pred.raw_output)
             )
         )
     return results
@@ -156,5 +158,6 @@ async def get_history_detail(
                 "interpretation": fc.interpretation
             } for fc in pred.feature_contributions
         ],
-        recommendations=[parse_recommendation(rec) for rec in pred.recommendations]
+        recommendations=[parse_recommendation(rec) for rec in pred.recommendations],
+        risk_dimensions=deserialize_risk_dimensions(pred.raw_output)
     )
