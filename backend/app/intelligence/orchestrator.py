@@ -239,12 +239,22 @@ async def analyze_and_persist(
         # Target Name Resolution (Task 1: REAL repository names)
         name_candidate = repo.name if repo else None
         
-        # Priority: Extract from URL if name is generic or missing
+        # Priority: Extract from URL if name is generic or missing (Task 1: derived label)
         if (not name_candidate or name_candidate == "riskops-demo") and repo and repo.repo_url:
             try:
-                url_parts = repo.repo_url.rstrip('/').split('/')
-                if len(url_parts) >= 2:
-                    name_candidate = url_parts[-1]
+                url = repo.repo_url.lower()
+                # Strip protocol and domains
+                clean_url = url.replace("https://", "").replace("http://", "")
+                clean_url = clean_url.replace("www.github.com/", "").replace("github.com/", "")
+                
+                # Ensure we have user/repo format
+                if "/" in clean_url:
+                    name_candidate = clean_url.strip("/")
+                else:
+                    # Fallback to last part if no slash remains
+                    url_parts = repo.repo_url.rstrip('/').split('/')
+                    if len(url_parts) >= 2:
+                        name_candidate = url_parts[-1]
             except Exception:
                 pass
         
