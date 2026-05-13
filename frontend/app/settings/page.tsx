@@ -12,7 +12,6 @@ import { useAuth } from '@/hooks/use-auth'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 import { UserDetailedResponse, UserUpdate } from '@/lib/api-types'
-import { mockIntegrations } from '@/lib/mock-data'
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme()
@@ -21,7 +20,7 @@ export default function SettingsPage() {
   const router = useRouter()
   
   const [mounted, setMounted] = useState(false)
-  const [activeTab, setActiveTab] = useState<'appearance' | 'profile' | 'backend' | 'integrations' | 'preferences'>('appearance')
+  const [activeTab, setActiveTab] = useState<'appearance' | 'profile' | 'backend' | 'preferences'>('appearance')
   
   // ── Layered State Management ───────────────────────────────────────────────
   // 1. Canonical State (from server)
@@ -108,7 +107,6 @@ export default function SettingsPage() {
             { id: 'appearance' as const, label: 'Appearance', icon: Monitor },
             { id: 'profile' as const, label: 'Profile', icon: Settings },
             { id: 'backend' as const, label: 'Backend', icon: Zap },
-            { id: 'integrations' as const, label: 'Integrations', icon: Cog },
             { id: 'preferences' as const, label: 'Preferences', icon: Bell },
           ].map((tab) => {
             const Icon = tab.icon
@@ -370,66 +368,6 @@ export default function SettingsPage() {
           </div>
         )}
 
-        {/* Integrations Tab */}
-        {activeTab === 'integrations' && (
-          <div className="space-y-6">
-            <Card className="p-6 bg-primary/5 border-primary/20">
-              <p className="text-sm text-primary">
-                Manage your connected CI/CD platforms, monitoring tools, and external services.
-              </p>
-            </Card>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {mockIntegrations.map((integration) => (
-                <Card key={integration.name} className="p-4">
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <p className="font-semibold text-foreground">{integration.name}</p>
-                      <p className="text-xs text-muted-foreground">{integration.description}</p>
-                    </div>
-                    <div
-                      className={`px-2 py-1 rounded text-xs font-semibold ${
-                        integration.status === 'connected'
-                          ? 'bg-green-100 dark:bg-green-900/30 text-status-low'
-                          : 'bg-red-100 dark:bg-red-900/30 text-status-critical'
-                      }`}
-                    >
-                      {integration.status === 'connected' ? 'Connected' : 'Disconnected'}
-                    </div>
-                  </div>
-
-                  {integration.status === 'connected' && integration.last_sync && (
-                    <div className="text-xs text-muted-foreground mb-3">
-                      <p>Last sync: {new Date(integration.last_sync).toLocaleTimeString()}</p>
-                      {integration.health && (
-                        <p className="mt-1">
-                          Health:{' '}
-                          <span
-                            className={
-                              integration.health === 'healthy'
-                                ? 'text-status-low'
-                                : 'text-status-high'
-                            }
-                          >
-                            {integration.health}
-                          </span>
-                        </p>
-                      )}
-                    </div>
-                  )}
-
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full"
-                  >
-                    {integration.status === 'connected' ? 'Reconfigure' : 'Connect'}
-                  </Button>
-                </Card>
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* Preferences Tab */}
         {activeTab === 'preferences' && (

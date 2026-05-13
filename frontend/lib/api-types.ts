@@ -173,11 +173,4 @@ export interface TelemetryData {
   runs_count: number
 }
 
-export interface IntegrationInfo {
-  name: string
-  description: string
-  status: 'connected' | 'disconnected' | 'error'
-  last_sync?: string
-  health?: 'healthy' | 'degraded' | 'error'
-}
 
