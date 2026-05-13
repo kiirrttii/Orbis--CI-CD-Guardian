@@ -19,7 +19,7 @@ Design principles:
 """
 
 from typing import Dict
-from app.ml.risk_dimensions import RiskDimensionsPayload, RiskDimensionResult
+from app.schemas.intelligence import RiskDimensionsPayload, RiskDimensionResult
 
 
 def _detect_structural_stress_indicators(features: Dict[str, float]) -> Dict[str, bool]:
@@ -94,23 +94,25 @@ def _amplify_score(original_score: float, factor: float, max_cap: float = 100.0)
 def apply_structural_stress_amplification(
     payload: RiskDimensionsPayload,
     features: Dict[str, float],
+    overall_risk_score: float,
     dry_run: bool = False
-) -> RiskDimensionsPayload:
+) -> tuple[RiskDimensionsPayload, float]:
     """
-    Optionally amplify dimension scores based on combined structural stress indicators.
+    Optionally amplify dimension scores and overall risk score based on combined structural stress indicators.
     
     BACKWARD COMPATIBLE:
     - If dry_run=True, logs changes without modifying payload (for validation)
-    - If no indicators present, returns unmodified payload
+    - If no indicators present, returns unmodified payload and original score
     - Returns a NEW payload object (immutable pattern)
     
     Args:
         payload: Original RiskDimensionsPayload
         features: Normalized feature dict for analysis
+        overall_risk_score: The overall risk score computed by the ML model
         dry_run: If True, log proposed changes without modifying (default False)
         
     Returns:
-        Modified or original RiskDimensionsPayload (depending on whether amplification applies)
+        tuple containing (Modified or original RiskDimensionsPayload, Amplified or original risk score)
     """
     # Step 1: Detect indicators
     indicators = _detect_structural_stress_indicators(features)
@@ -121,9 +123,12 @@ def apply_structural_stress_amplification(
     
     # Step 3: If no amplification needed, return original
     if factor == 1.0:
-        return payload
+        return payload, overall_risk_score
     
-    # Step 4: Amplify scores
+    # Step 4: Amplify overall risk score
+    amplified_overall_score = _amplify_score(overall_risk_score, factor)
+    
+    # Step 5: Amplify dimension scores
     amplified_maintainability = RiskDimensionResult(
         score=_amplify_score(payload.maintainability.score, factor),
         grade=payload.maintainability.grade,  # Grade unchanged; score speaks for itself
@@ -142,7 +147,15 @@ def apply_structural_stress_amplification(
         summary=payload.security_exposure.summary
     )
     
-    # Step 5: If dry_run, log proposed changes and return original
+    # Step 6: Update interpretation summary with transparent wording (Task 3)
+    # Preservation of technical honesty: lightweight, non-alarmist phrasing.
+    amplification_note = "Large-scale structural stress indicators contributed to slightly elevated deployment-readiness concerns."
+    if len(active_indicators) >= 4:
+         amplification_note = "Extensive structural complexity and coupling patterns increased heuristic deployment burden estimation."
+         
+    new_summary = f"{payload.interpretation_summary} {amplification_note}"
+    
+    # Step 7: If dry_run, log proposed changes and return original
     if dry_run:
         import logging
         logger = logging.getLogger(__name__)
@@ -150,6 +163,8 @@ def apply_structural_stress_amplification(
             "structural_stress_amplification_proposal",
             active_indicators=active_indicators,
             amplification_factor=factor,
+            original_overall_score=overall_risk_score,
+            amplified_overall_score=amplified_overall_score,
             original_scores={
                 'maintainability': payload.maintainability.score,
                 'stability': payload.deployment_stability.score,
@@ -161,13 +176,15 @@ def apply_structural_stress_amplification(
                 'security': amplified_security.score,
             }
         )
-        return payload
+        return payload, overall_risk_score
     
-    # Step 6: Return new payload with amplified scores
-    return RiskDimensionsPayload(
+    # Step 8: Return new payload with amplified scores and narrative
+    new_payload = RiskDimensionsPayload(
         maintainability=amplified_maintainability,
         deployment_stability=amplified_stability,
         security_exposure=amplified_security,
-        interpretation_summary=payload.interpretation_summary,  # No change to narrative
+        interpretation_summary=new_summary,
         confidence=payload.confidence
     )
+    
+    return new_payload, amplified_overall_score

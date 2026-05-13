@@ -8,7 +8,6 @@ import {
   Zap,
   ThumbsUp,
   History,
-  MonitorDot,
   FileText,
   Settings,
   ChevronDown,
@@ -37,7 +36,6 @@ const navigationGroups = [
     items: [
       { name: 'Analyze Pipeline', href: '/analyze', icon: Zap, primary: true },
       { name: 'Deployment History', href: '/history', icon: History },
-      { name: 'Monitoring & Dev Tools', href: '/monitoring', icon: MonitorDot },
       { name: 'Recommendations', href: '/recommendations', icon: ThumbsUp },
     ]
   },

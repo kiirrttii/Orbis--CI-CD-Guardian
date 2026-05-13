@@ -39,18 +39,38 @@ async def list_history(
     results = []
     for pred in history:
         # Map ORM to IntelligenceResponse
-        # Note: In a production app, we'd use a more efficient mapper or partial schema
-        target_name = "Manual Analysis"
+        # ── Target Name Resolution (Task 1: REAL repository names) ───────────
+        target_name = "Analysis"
+        
         if pred.workflow_run:
-            target_name = pred.workflow_run.workflow_name
-            if hasattr(pred.workflow_run, 'repository_id') and pred.workflow_run.repository_id:
-                from app.models.repository import Repository
-                from sqlalchemy import select
-                repo_stmt = select(Repository).where(Repository.id == pred.workflow_run.repository_id)
-                repo_result = await db.execute(repo_stmt)
-                repo = repo_result.scalars().first()
-                if repo:
-                    target_name = repo.name
+            repo = pred.workflow_run.repository
+            
+            # Priority 1: Actual repository name from relationship
+            # But filter out generic placeholders like 'riskops-demo'
+            name_candidate = repo.name if repo else None
+            
+            # Priority 2: Extract from URL if name is generic or missing
+            if (not name_candidate or name_candidate == "riskops-demo") and repo and repo.repo_url:
+                try:
+                    url_parts = repo.repo_url.rstrip('/').split('/')
+                    if len(url_parts) >= 2:
+                        name_candidate = url_parts[-1]
+                except Exception:
+                    pass
+            
+            # Priority 3: Fallback to workflow name (if not ad-hoc)
+            if not name_candidate or name_candidate == "Ad-hoc Analysis":
+                name_candidate = pred.workflow_run.workflow_name
+                
+            # Priority 4: Fallback to analysis type
+            if not name_candidate or name_candidate == "Ad-hoc Analysis":
+                name_candidate = pred.analysis_type.capitalize() if pred.analysis_type else "Analysis"
+            
+            target_name = name_candidate
+        else:
+            # Absolute fallback
+            target_name = pred.analysis_type.capitalize() if pred.analysis_type else "Analysis"
+        # ──────────────────────────────────────────────────────────────────────
 
         results.append(
             IntelligenceResponse(
@@ -97,17 +117,38 @@ async def get_history_detail(
             detail="Analysis report not found"
         )
         
-    target_name = "Manual Analysis"
+    # ── Target Name Resolution (Task 1: REAL repository names) ───────────
+    target_name = "Analysis"
+    
     if pred.workflow_run:
-        target_name = pred.workflow_run.workflow_name
-        if hasattr(pred.workflow_run, 'repository_id') and pred.workflow_run.repository_id:
-            from app.models.repository import Repository
-            from sqlalchemy import select
-            repo_stmt = select(Repository).where(Repository.id == pred.workflow_run.repository_id)
-            repo_result = await db.execute(repo_stmt)
-            repo = repo_result.scalars().first()
-            if repo:
-                target_name = repo.name
+        repo = pred.workflow_run.repository
+        
+        # Priority 1: Actual repository name from relationship
+        # But filter out generic placeholders like 'riskops-demo'
+        name_candidate = repo.name if repo else None
+        
+        # Priority 2: Extract from URL if name is generic or missing
+        if (not name_candidate or name_candidate == "riskops-demo") and repo and repo.repo_url:
+            try:
+                url_parts = repo.repo_url.rstrip('/').split('/')
+                if len(url_parts) >= 2:
+                    name_candidate = url_parts[-1]
+            except Exception:
+                pass
+        
+        # Priority 3: Fallback to workflow name (if not ad-hoc)
+        if not name_candidate or name_candidate == "Ad-hoc Analysis":
+            name_candidate = pred.workflow_run.workflow_name
+            
+        # Priority 4: Fallback to analysis type
+        if not name_candidate or name_candidate == "Ad-hoc Analysis":
+            name_candidate = pred.analysis_type.capitalize() if pred.analysis_type else "Analysis"
+        
+        target_name = name_candidate
+    else:
+        # Absolute fallback
+        target_name = pred.analysis_type.capitalize() if pred.analysis_type else "Analysis"
+    # ──────────────────────────────────────────────────────────────────────
 
     def parse_recommendation(rec):
         desc = rec.description or ""

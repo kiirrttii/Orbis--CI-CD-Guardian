@@ -9,158 +9,184 @@ Generates context-aware recommendations by combining:
 This avoids static feature thresholds and makes recommendations explainable.
 """
 
-from typing import List
-
+from typing import List, Optional, Dict
 from app.core.risk_policy import RiskSeverity
 from app.schemas.explainability import FeatureContributionSchema
 from app.schemas.recommendation import ActionableInsight
 from app.models.recommendation import RecommendationPriority
-
+from app.schemas.intelligence import RiskDimensionsPayload
 
 def generate_recommendations(
     contributions: List[FeatureContributionSchema],
-    severity: RiskSeverity
+    severity: RiskSeverity,
+    features: Dict[str, float],
+    risk_dimensions: Optional[RiskDimensionsPayload] = None
 ) -> List[ActionableInsight]:
     """
-    Generate prioritized actionable insights based on explainability output and risk severity.
+    Generate prioritized actionable insights by combining:
+    1. Feature contributions (SHAP)
+    2. Raw feature values (Thresholds)
+    3. Multidimensional risk scores
+    4. Overall risk severity
     """
     insights: List[ActionableInsight] = []
-    
-    # Process each contribution for specific insights
+    seen_titles = set()
+
+    def add_insight(insight: ActionableInsight):
+        if insight.title not in seen_titles:
+            insights.append(insight)
+            seen_titles.add(insight.title)
+
+    # 1. Process SHAP-driven insights (explainable logic)
     for contrib in contributions:
-        # We process both risk-increasers (for mitigation) and risk-reducers (for confirmation)
-        # though we prioritize risk-increasers in the output.
-        
-        # Thresholds vary by severity to ensure even LOW risk gets informational feedback
-        threshold = 5.0 if severity == RiskSeverity.LOW else 8.0
+        # Lower threshold for HIGH/CRITICAL to get more actionable items
+        threshold = 4.0 if severity in (RiskSeverity.HIGH, RiskSeverity.CRITICAL) else 7.0
         
         if contrib.direction == "increase_risk" and contrib.impact_percent >= threshold:
-            # Prioritization logic
             prio = RecommendationPriority.MEDIUM
-            if severity == RiskSeverity.CRITICAL and contrib.impact_percent > 20:
+            if severity == RiskSeverity.CRITICAL and contrib.impact_percent > 15:
                 prio = RecommendationPriority.CRITICAL
             elif severity in (RiskSeverity.HIGH, RiskSeverity.CRITICAL):
                 prio = RecommendationPriority.HIGH
             elif severity == RiskSeverity.LOW:
                 prio = RecommendationPriority.LOW
 
-            # Rule mapping based on feature name
+            # Feature-specific logic
             if contrib.feature == "CYCLO":
-                insights.append(
-                    ActionableInsight(
-                        title="Reduce Logic Complexity",
-                        explanation="The workflow contains functions with high branching complexity (e.g., too many if/else statements or loops).",
-                        impact="High logic complexity increases maintenance difficulty, makes the code harder to read, and elevates the risk of deployment instability.",
-                        suggested_action="Consider splitting complex logic into smaller, reusable functions to improve readability and testability.",
-                        triggered_by=["Logic Complexity", f"Impact: {contrib.impact_percent}%"],
-                        priority=prio,
-                        action_type="refactor"
-                    )
-                )
+                add_insight(ActionableInsight(
+                    title="Simplify Complex Logic Paths",
+                    explanation="The analysis detected highly complex logic paths with excessive branching.",
+                    impact="Complex logic increases the likelihood of edge-case failures during deployment.",
+                    suggested_action="Refactor oversized functions by extracting complex conditions into smaller, testable modules.",
+                    triggered_by=["High Cyclomatic Complexity", f"Impact: {contrib.impact_percent}%"],
+                    priority=prio,
+                    action_type="simplify"
+                ))
             elif contrib.feature == "BRANCH_COUNT":
-                insights.append(
-                    ActionableInsight(
-                        title="Consolidate Execution Paths",
-                        explanation="The codebase has an elevated density of execution paths, meaning there are many different ways the code can flow.",
-                        impact="Having too many branches makes it nearly impossible to achieve full test coverage, increasing the risk of unexpected bugs in production.",
-                        suggested_action="Consolidate overlapping logic and review test cases to ensure all critical execution paths are properly covered.",
-                        triggered_by=["Branch Density", f"Impact: {contrib.impact_percent}%"],
-                        priority=prio,
-                        action_type="testing"
-                    )
-                )
-            elif contrib.feature == "DIFFICULTY":
-                insights.append(
-                    ActionableInsight(
-                        title="Simplify Code Interactions",
-                        explanation="The ratio of unique operators to operands is high, indicating high cognitive load for developers trying to understand the code.",
-                        impact="Hard-to-read code leads to a steeper learning curve for new developers and a higher likelihood of introducing defects during maintenance.",
-                        suggested_action="Simplify operator interactions, use descriptive variable names, and break down dense algorithmic sections.",
-                        triggered_by=["Cognitive Load", f"Impact: {contrib.impact_percent}%"],
-                        priority=prio,
-                        action_type="review"
-                    )
-                )
+                add_insight(ActionableInsight(
+                    title="Consolidate Branching Logic",
+                    explanation="An elevated number of conditional branches was identified, complicating validation.",
+                    impact="Excessive branching makes exhaustive pre-deployment testing nearly impossible.",
+                    suggested_action="Consolidate nested if/else structures and ensure unit tests cover the most critical paths.",
+                    triggered_by=["Branch Density", f"Impact: {contrib.impact_percent}%"],
+                    priority=prio,
+                    action_type="simplify"
+                ))
             elif contrib.feature == "LOC":
-                insights.append(
-                    ActionableInsight(
-                        title="Modularize Large Files",
-                        explanation="The volume of code in single files or functions is significantly higher than standard thresholds.",
-                        impact="Large monolithic components are difficult to audit, harder to test, and exponentially more prone to regressions during updates.",
-                        suggested_action="Extract separate responsibilities into their own modules or files to reduce volume and improve modularity.",
-                        triggered_by=["Code Volume", f"Impact: {contrib.impact_percent}%"],
-                        priority=prio,
-                        action_type="refactor"
-                    )
-                )
+                add_insight(ActionableInsight(
+                    title="Modularize Large Components",
+                    explanation="Significant code volume was detected in specific files or functions.",
+                    impact="Large monolithic components increase review burden and regression risk.",
+                    suggested_action="Partition oversized modules into smaller, logically independent files.",
+                    triggered_by=["Code Volume (LOC)", f"Impact: {contrib.impact_percent}%"],
+                    priority=prio,
+                    action_type="modularize"
+                ))
             elif contrib.feature == "INT_FAN_OUT":
-                insights.append(
-                    ActionableInsight(
-                        title="Reduce Module Dependency Spread",
-                        explanation="This module relies on a large number of external components or services to function.",
-                        impact="High dependency spread (Fan-Out) creates tight coupling. If any of those external dependencies change or fail, this module will likely break.",
-                        suggested_action="Decouple components where possible. Consider using interfaces, dependency injection, or an event-driven architecture.",
-                        triggered_by=["External Dependencies", f"Impact: {contrib.impact_percent}%"],
-                        priority=prio,
-                        action_type="refactor"
-                    )
-                )
-            elif contrib.feature == "INT_FAN_IN":
-                insights.append(
-                    ActionableInsight(
-                        title="Audit Core Dependency Interfaces",
-                        explanation="This module is heavily depended upon by many other components within the system.",
-                        impact="Because it is a core module, any changes made here have high stakes and a massive blast radius if something goes wrong.",
-                        suggested_action="Ensure rigorous integration testing before merging. Implement backward-compatible changes to prevent downstream breakages.",
-                        triggered_by=["Core Module Indicator", f"Impact: {contrib.impact_percent}%"],
-                        priority=prio,
-                        action_type="testing"
-                    )
-                )
-            elif contrib.feature == "VOLUME":
-                insights.append(
-                    ActionableInsight(
-                        title="Review Information Density",
-                        explanation="The codebase has a high overall information volume, packing complex logic into dense spaces.",
-                        impact="High density may obscure subtle logic errors, making them easily missed during standard code reviews.",
-                        suggested_action="Perform a focused, deliberate peer-review of the implementation details, potentially using pair-programming.",
-                        triggered_by=["Information Density", f"Impact: {contrib.impact_percent}%"],
-                        priority=prio,
-                        action_type="review"
-                    )
-                )
+                add_insight(ActionableInsight(
+                    title="Reduce Dependency Coupling",
+                    explanation="This module relies on an exceptionally large number of external module dependencies.",
+                    impact="High fan-out creates tight coupling, making the system fragile to downstream changes.",
+                    suggested_action="Decouple modules using interfaces or abstract layers to limit dependency spread.",
+                    triggered_by=["Internal Fan-Out", f"Impact: {contrib.impact_percent}%"],
+                    priority=prio,
+                    action_type="refactor"
+                ))
+            elif contrib.feature == "DIFFICULTY":
+                add_insight(ActionableInsight(
+                    title="Reduce Cognitive Load",
+                    explanation="High algorithmic difficulty was detected, indicating dense and potentially confusing code.",
+                    impact="High cognitive load leads to human error during maintenance and slow review cycles.",
+                    suggested_action="Simplify operator interactions and use more descriptive variable naming conventions.",
+                    triggered_by=["Halstead Difficulty", f"Impact: {contrib.impact_percent}%"],
+                    priority=prio,
+                    action_type="optimize"
+                ))
 
-    # If severity is LOW and we have no specific risk-mitigation insights, 
-    # provide a 'Best Practice' confirmation.
-    if not insights and severity == RiskSeverity.LOW:
-        insights.append(
-            ActionableInsight(
-                title="Maintain Current Standards",
-                explanation="The analyzed code metrics align closely with industry stability best practices.",
-                impact="Keeping risk low ensures smooth deployments, minimal production incidents, and high engineering velocity.",
-                suggested_action="Continue monitoring trends. No immediate refactoring or mitigation is required for this deployment.",
-                triggered_by=["Overall Stability"],
-                priority=RecommendationPriority.LOW,
-                action_type="monitoring"
-            )
-        )
+    # 2. Add raw feature threshold insights (Task 2: coverage)
+    # This captures issues that might not be top SHAP contributors but are still problematic
+    if features.get("LENGTH", 0) > 0.7:
+        add_insight(ActionableInsight(
+            title="Refactor Oversized Sequences",
+            explanation="The total number of operators and operands exceeds stability thresholds.",
+            impact="Long instruction sequences are harder to audit and prone to subtle logic regressions.",
+            suggested_action="Break down long algorithmic sequences into smaller, named utility functions.",
+            triggered_by=["High Length Metric"],
+            priority=RecommendationPriority.MEDIUM,
+            action_type="refactor"
+        ))
     
-    # Ensure high-risk analyses always have a catch-all if specifics are thin
-    if not [i for i in insights if i.priority in (RecommendationPriority.HIGH, RecommendationPriority.CRITICAL)] \
-       and severity in (RiskSeverity.HIGH, RiskSeverity.CRITICAL):
-        insights.append(
-            ActionableInsight(
-                title="Enhanced Security & Logic Review",
-                explanation="An elevated overall operational risk was detected across the deployment profile.",
-                impact="Proceeding without mitigation carries a significant risk of deployment failure or critical runtime regressions.",
-                suggested_action="Perform a manual security and logic audit of the latest changes before merging this deployment.",
-                triggered_by=["Aggregated Risk Score"],
+    if features.get("INT_FAN_IN", 0) > 0.8:
+        add_insight(ActionableInsight(
+            title="Audit High-Impact Core Interfaces",
+            explanation="This module is a central dependency for a large portion of the repository.",
+            impact="Changes to core modules have a massive blast radius across the entire deployment.",
+            suggested_action="Ensure 100% test coverage on public interfaces for this module before merging.",
+            triggered_by=["Critical Fan-In"],
+            priority=RecommendationPriority.HIGH if severity != RiskSeverity.LOW else RecommendationPriority.MEDIUM,
+            action_type="audit"
+        ))
+
+    # 3. Add Multidimensional Insights (Task 2 & 3: prioritization)
+    if risk_dimensions:
+        if risk_dimensions.maintainability.score > 60:
+            add_insight(ActionableInsight(
+                title="Immediate Maintainability Review",
+                explanation="Overall code quality metrics have fallen below acceptable maintainability standards.",
+                impact="Sustained low maintainability leads to technical debt and increased deployment friction.",
+                suggested_action="Schedule a dedicated refactoring sprint to address structural maintainability concerns.",
+                triggered_by=["Low Maintainability Grade"],
+                priority=RecommendationPriority.HIGH,
+                action_type="refactor"
+            ))
+        
+        if risk_dimensions.deployment_stability.score > 60:
+            add_insight(ActionableInsight(
+                title="Stabilize Integration Boundaries",
+                explanation="Structural coupling and integration indicators suggest high deployment instability.",
+                impact="Proceeding with deployment carries an elevated risk of integration failure.",
+                suggested_action="Verify integration contracts and perform a staging environment smoke test.",
+                triggered_by=["Low Deployment Stability Grade"],
+                priority=RecommendationPriority.HIGH,
+                action_type="stabilize"
+            ))
+
+        if risk_dimensions.security_exposure.score > 60:
+             add_insight(ActionableInsight(
+                title="Structural Complexity Audit",
+                explanation="High structural complexity was detected in security-sensitive or core logic paths.",
+                impact="Complex structural patterns can obscure logic errors or unintentional side effects.",
+                suggested_action="Perform a targeted manual review of recent changes in complex modules.",
+                triggered_by=["High Structural Review Complexity"],
+                priority=RecommendationPriority.HIGH if severity != RiskSeverity.LOW else RecommendationPriority.MEDIUM,
+                action_type="audit"
+            ))
+
+    # 4. Mandatory Fallbacks (Task 1: ensure at least 1–3 always appear)
+    if not insights:
+        if severity in (RiskSeverity.HIGH, RiskSeverity.CRITICAL):
+            add_insight(ActionableInsight(
+                title="Enhanced Manual Peer Review",
+                explanation="An elevated risk score was detected without a single dominant structural cause.",
+                impact="Proceeding without manual verification carries high risk due to aggregated signals.",
+                suggested_action="Requirement: At least two senior engineers should review this deployment manually.",
+                triggered_by=["Aggregated Risk Indicators"],
                 priority=RecommendationPriority.HIGH,
                 action_type="review"
-            )
-        )
+            ))
+        
+        # Base fallback for all
+        add_insight(ActionableInsight(
+            title="Monitor Structural Complexity Trends",
+            explanation="The current analysis shows a baseline of structural complexity typical of evolving repositories.",
+            impact="Gradual complexity growth can lead to long-term maintainability degradation.",
+            suggested_action="Continue to monitor maintainability grades during subsequent deployment cycles.",
+            triggered_by=["Baseline Structural Analysis"],
+            priority=RecommendationPriority.LOW,
+            action_type="optimize"
+        ))
 
-    # Priority sorting mapping
+    # Final sorting and capping (Task 3: Prioritization)
     priority_order = {
         RecommendationPriority.CRITICAL: 0,
         RecommendationPriority.HIGH: 1,
@@ -170,5 +196,5 @@ def generate_recommendations(
     
     insights.sort(key=lambda x: priority_order.get(x.priority, 3))
     
-    # Cap at 5 recommendations to avoid UI clutter
-    return insights[:5]
+    # Return 2-4 best recommendations as requested (Task 2)
+    return insights[:4]

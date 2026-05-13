@@ -17,6 +17,7 @@ from app.ml.predictor import predict_single
 from app.explainability.explainer import generate_explanations
 from app.recommendations.engine import generate_recommendations
 from app.ml.risk_dimensions import compute_risk_dimensions
+from app.utils.risk_amplification import apply_structural_stress_amplification
 
 from app.models.prediction import Prediction
 from app.models.feature_contribution import FeatureContribution
@@ -97,10 +98,8 @@ async def analyze_and_persist(
     feature_vector = request.to_feature_vector()
     explanations = generate_explanations(feature_vector)
     
-    # 3. Recommendations
-    recommendations = generate_recommendations(explanations, inference_result.severity)
-
-    # 3.5 Risk Dimensions (additive interpretation layer — fault-tolerant)
+    # 3. Risk Dimensions (additive interpretation layer — fault-tolerant)
+    # Moved up so recommendations can use dimensional scores for better context
     feature_dict = request.to_feature_dict()
     risk_dimensions_payload = None
     try:
@@ -129,15 +128,50 @@ async def analyze_and_persist(
             interpretation_summary=dims.interpretation_summary,
             confidence=dims.confidence,
         )
-        logger.info("risk_dimensions_computed", grades={
-            "maintainability": dims.maintainability.grade,
-            "deployment_stability": dims.deployment_stability.grade,
-            "security_exposure": dims.security_exposure.grade,
-            "confidence": dims.confidence,
-        })
+        
+        # 3.1 Risk Amplification (structural stress heuristic — Task 1-4)
+        if risk_dimensions_payload:
+            risk_dimensions_payload, inference_result.risk_score = apply_structural_stress_amplification(
+                payload=risk_dimensions_payload,
+                features=feature_dict,
+                overall_risk_score=inference_result.risk_score
+            )
+            # Re-classify severity based on amplified score
+            from app.core.risk_policy import classify_severity
+            inference_result.severity = classify_severity(inference_result.risk_score)
+            
+            # Sync confidence level for UI consistency
+            inference_result.confidence_level = risk_dimensions_payload.confidence
+            
+        logger.info("risk_dimensions_computed", amplified_score=inference_result.risk_score)
     except Exception as exc:
         logger.warning("risk_dimensions_failed", error=str(exc))
-        risk_dimensions_payload = None
+
+    # 4. Recommendations (Strengthened Engine — Task 1-6)
+    recommendations = []
+    try:
+        recommendations = generate_recommendations(
+            contributions=explanations,
+            severity=inference_result.severity,
+            features=feature_dict,
+            risk_dimensions=risk_dimensions_payload
+        )
+    except Exception as exc:
+        logger.error("recommendation_generation_failed", error=str(exc))
+        # Fallback recommendations if the engine crashes (Stability Requirement Task 6)
+        from app.schemas.recommendation import ActionableInsight
+        from app.models.recommendation import RecommendationPriority
+        recommendations = [
+            ActionableInsight(
+                title="Review Repository Structural Trends",
+                explanation="An error occurred during specific recommendation generation, but overall structural indicators remain available.",
+                impact="Generic structural oversight may be reduced if specific insights are unavailable.",
+                suggested_action="Monitor repository complexity and maintainability metrics through the multidimensional analysis panel.",
+                triggered_by=["System Safety Fallback"],
+                priority=RecommendationPriority.MEDIUM,
+                action_type="review"
+            )
+        ]
 
 
     # 4. Persistence
@@ -194,14 +228,33 @@ async def analyze_and_persist(
     target_name = "Manual Analysis"
     if run:
         target_name = run.workflow_name
+        repo = None
         if hasattr(run, 'repository_id') and run.repository_id:
             from app.models.repository import Repository
             from sqlalchemy import select
             repo_stmt = select(Repository).where(Repository.id == run.repository_id)
             repo_result = await session.execute(repo_stmt)
             repo = repo_result.scalars().first()
-            if repo:
-                target_name = repo.name
+            
+        # Target Name Resolution (Task 1: REAL repository names)
+        name_candidate = repo.name if repo else None
+        
+        # Priority: Extract from URL if name is generic or missing
+        if (not name_candidate or name_candidate == "riskops-demo") and repo and repo.repo_url:
+            try:
+                url_parts = repo.repo_url.rstrip('/').split('/')
+                if len(url_parts) >= 2:
+                    name_candidate = url_parts[-1]
+            except Exception:
+                pass
+        
+        # Fallback to workflow name
+        if not name_candidate or name_candidate == "Ad-hoc Analysis":
+            name_candidate = run.workflow_name
+            
+        if name_candidate:
+            target_name = name_candidate
+
     return IntelligenceResponse(
         workflow_run_id=workflow_run_id,
         prediction_id=persisted_prediction.id,
@@ -212,6 +265,8 @@ async def analyze_and_persist(
             risk_score=inference_result.risk_score,
             severity=inference_result.severity,
             analysis_type=analysis_type,
+            confidence=inference_result.confidence,
+            confidence_level=inference_result.confidence_level,
             model_version=inference_result.model_version,
             timestamp=persisted_prediction.created_at
         ),

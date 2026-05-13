@@ -227,6 +227,11 @@ export function AnalysisResults({ result, isAnalyzing }: AnalysisResultsProps) {
   const handleExportCSV = () => {
     if (!result) return
 
+    const escapeCSV = (val: any) => {
+      const str = String(val).replace(/"/g, '""')
+      return str.includes(',') || str.includes('\n') || str.includes('"') ? `"${str}"` : str
+    }
+
     const rows = [
       ['Metric', 'Value'],
       ['Prediction ID', result.prediction_id],
@@ -234,13 +239,22 @@ export function AnalysisResults({ result, isAnalyzing }: AnalysisResultsProps) {
       ['Risk Score', riskScore],
       ['Severity', severity],
       ['Model Version', result.inference.model_version],
+      ['Confidence Level', result.inference.confidence_level],
       ['Timestamp', result.inference.timestamp],
       [],
       ['Feature', 'Impact (%)', 'Direction'],
-      ...result.explainability.map(e => [e.feature, Math.round(e.impact_percent), e.direction === 'increase_risk' ? 'Increase Risk' : 'Decrease Risk']),
+      ...result.explainability.map(e => [
+        escapeCSV(e.feature),
+        Math.round(e.impact_percent),
+        e.direction === 'increase_risk' ? 'Increase Risk' : 'Decrease Risk'
+      ]),
       [],
       ['Recommendation', 'Priority', 'Action Type'],
-      ...result.recommendations.map(r => [r.title, r.priority, r.action_type])
+      ...result.recommendations.map(r => [
+        escapeCSV(r.title),
+        r.priority,
+        escapeCSV(r.action_type)
+      ])
     ]
 
     const csvContent = 'data:text/csv;charset=utf-8,'
@@ -349,9 +363,6 @@ export function AnalysisResults({ result, isAnalyzing }: AnalysisResultsProps) {
                 )}>
                   {result?.inference.confidence_level || 'LOW'}
                 </span>
-                <span className="text-xs text-muted-foreground">
-                  (Based on {result ? (result.inference.confidence * 100).toFixed(1) : 0}% metric signal)
-                </span>
               </div>
             </div>
 
@@ -362,8 +373,8 @@ export function AnalysisResults({ result, isAnalyzing }: AnalysisResultsProps) {
               </p>
             </div>
 
-            {/* Export Buttons */}
-            <div className="flex gap-2 pt-4">
+            {/* Export Buttons (Task 3: relative z-10 for responsiveness) */}
+            <div className="flex gap-2 pt-4 relative z-10">
               <Button variant="outline" size="sm" className="flex-1" disabled={!result} onClick={handlePrintPDF}>
                 <Download className="w-4 h-4 mr-2" />
                 Print/PDF
