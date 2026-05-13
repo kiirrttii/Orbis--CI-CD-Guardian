@@ -127,15 +127,18 @@ async def analyze_and_persist(
                 summary=dims.security_exposure.summary,
             ),
             interpretation_summary=dims.interpretation_summary,
+            confidence=dims.confidence,
         )
         logger.info("risk_dimensions_computed", grades={
             "maintainability": dims.maintainability.grade,
             "deployment_stability": dims.deployment_stability.grade,
             "security_exposure": dims.security_exposure.grade,
+            "confidence": dims.confidence,
         })
     except Exception as exc:
         logger.warning("risk_dimensions_failed", error=str(exc))
         risk_dimensions_payload = None
+
 
     # 4. Persistence
     intelligence_repo = IntelligenceRepository(session)

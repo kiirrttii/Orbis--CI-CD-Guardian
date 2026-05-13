@@ -33,8 +33,13 @@ class RiskDimensionsPayload(BaseModel):
     """
     maintainability: RiskDimensionResult = Field(..., description="Maintainability risk (CYCLO, LENGTH, LOC, VOLUME, DIFFICULTY)")
     deployment_stability: RiskDimensionResult = Field(..., description="Deployment stability risk (BRANCH_COUNT, INT_FAN_IN, INT_FAN_OUT, LOC, VOLUME)")
-    security_exposure: RiskDimensionResult = Field(..., description="Security exposure risk (conservative heuristic proxy)")
+    security_exposure: RiskDimensionResult = Field(..., description="Structural review complexity (conservative heuristic proxy; no vulnerability scanning)")
     interpretation_summary: str = Field(..., description="Top-level narrative summarising all three dimensions")
+    # Heuristic confidence — NOT derived from ML probabilities
+    confidence: str = Field(
+        default="MEDIUM",
+        description="Heuristic confidence label: LOW | MEDIUM | HIGH (based on feature completeness)",
+    )
 
 class IntelligenceResponse(BaseModel):
     """

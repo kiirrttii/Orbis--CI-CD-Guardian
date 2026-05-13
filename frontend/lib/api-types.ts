@@ -42,6 +42,7 @@ export interface RiskDimensionsPayload {
   deployment_stability: RiskDimensionResult
   security_exposure: RiskDimensionResult
   interpretation_summary: string
+  confidence?: string  // LOW | MEDIUM | HIGH — heuristic, not ML
 }
 
 // ── Analysis Response ─────────────────────────────────────────────────────────

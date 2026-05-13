@@ -2,7 +2,7 @@
 
 import { Card } from '@/components/ui/card'
 import type { RiskDimensionsPayload, RiskDimensionResult } from '@/lib/api-types'
-import { ShieldCheck, Wrench, Layers, Info } from 'lucide-react'
+import { ShieldAlert, Wrench, Layers, Info, CircleDot } from 'lucide-react'
 
 interface RiskDimensionsPanelProps {
   riskDimensions: RiskDimensionsPayload
@@ -47,24 +47,48 @@ function getGradeConfig(grade: string) {
   return GRADE_CONFIG[grade] ?? GRADE_CONFIG['C']!
 }
 
+// ── Confidence badge config ───────────────────────────────────────────────────
+
+const CONFIDENCE_CONFIG: Record<string, { bg: string; text: string; border: string }> = {
+  HIGH:   { bg: 'bg-emerald-500/10', text: 'text-emerald-600 dark:text-emerald-400', border: 'border-emerald-500/30' },
+  MEDIUM: { bg: 'bg-yellow-500/10',  text: 'text-yellow-600 dark:text-yellow-400',   border: 'border-yellow-500/30'  },
+  LOW:    { bg: 'bg-slate-500/10',   text: 'text-slate-500 dark:text-slate-400',      border: 'border-slate-500/30'   },
+}
+
+function ConfidenceBadge({ confidence }: { confidence?: string }) {
+  if (!confidence) return null
+  const cfg = CONFIDENCE_CONFIG[confidence] ?? CONFIDENCE_CONFIG['MEDIUM']!
+  return (
+    <span
+      className={`
+        inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-semibold
+        ${cfg.bg} ${cfg.text} ${cfg.border}
+      `}
+      title="Heuristic confidence — based on feature completeness, not ML probability"
+    >
+      <CircleDot className="w-2.5 h-2.5" />
+      {confidence} confidence
+    </span>
+  )
+}
+
 // ── Score bar ─────────────────────────────────────────────────────────────────
 
-function ScoreBar({ score, grade }: { score: number; grade: string }) {
-  const cfg = getGradeConfig(grade)
-  const barColorMap: Record<string, string> = {
-    A: 'bg-emerald-500',
-    B: 'bg-teal-500',
-    C: 'bg-yellow-500',
-    D: 'bg-orange-500',
-    E: 'bg-red-500',
-  }
-  const barColor = barColorMap[grade] ?? 'bg-yellow-500'
+const BAR_COLORS: Record<string, string> = {
+  A: 'bg-emerald-500',
+  B: 'bg-teal-500',
+  C: 'bg-yellow-500',
+  D: 'bg-orange-500',
+  E: 'bg-red-500',
+}
 
+function ScoreBar({ score, grade }: { score: number; grade: string }) {
+  const barColor = BAR_COLORS[grade] ?? 'bg-yellow-500'
   return (
     <div className="w-full h-1.5 rounded-full bg-muted/50 overflow-hidden mt-2">
       <div
         className={`h-full rounded-full transition-all duration-700 ease-out ${barColor}`}
-        style={{ width: `${Math.min(score, 100)}%` }}
+        style={{ width: `${Math.min(Math.max(score, 0), 100)}%` }}
       />
     </div>
   )
@@ -74,11 +98,12 @@ function ScoreBar({ score, grade }: { score: number; grade: string }) {
 
 interface DimensionCardProps {
   title: string
+  subtitle: string
   icon: React.ReactNode
   result: RiskDimensionResult
 }
 
-function DimensionCard({ title, icon, result }: DimensionCardProps) {
+function DimensionCard({ title, subtitle, icon, result }: DimensionCardProps) {
   const cfg = getGradeConfig(result.grade)
 
   return (
@@ -92,19 +117,22 @@ function DimensionCard({ title, icon, result }: DimensionCardProps) {
       {/* Header row */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
-          <div className={`p-1.5 rounded-lg ${cfg.bg}`}>
+          <div className={`p-1.5 rounded-lg ${cfg.bg} flex-shrink-0`}>
             <span className={cfg.text}>{icon}</span>
           </div>
-          <span className="text-sm font-semibold text-foreground truncate">{title}</span>
+          <div className="min-w-0">
+            <span className="text-sm font-semibold text-foreground block truncate">{title}</span>
+            <span className="text-[10px] text-muted-foreground block">{subtitle}</span>
+          </div>
         </div>
 
         {/* Grade badge */}
         <div
           className={`
-            flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center
-            font-black text-sm border ${cfg.bg} ${cfg.text} ${cfg.border}
+            flex-shrink-0 w-9 h-9 rounded-lg flex flex-col items-center justify-center
+            font-black text-base border ${cfg.bg} ${cfg.text} ${cfg.border}
           `}
-          title={cfg.label}
+          title={`Grade ${result.grade} — ${cfg.label}`}
         >
           {result.grade}
         </div>
@@ -113,16 +141,16 @@ function DimensionCard({ title, icon, result }: DimensionCardProps) {
       {/* Score line */}
       <div className="space-y-1">
         <div className="flex items-center justify-between">
-          <span className="text-xs text-muted-foreground">Risk Score</span>
-          <span className={`text-xs font-bold tabular-nums ${cfg.text}`}>
-            {result.score.toFixed(0)}/100
+          <span className="text-[11px] text-muted-foreground">Heuristic Score</span>
+          <span className={`text-[11px] font-bold tabular-nums ${cfg.text}`}>
+            {result.score.toFixed(0)}<span className="opacity-60">/100</span>
           </span>
         </div>
         <ScoreBar score={result.score} grade={result.grade} />
       </div>
 
       {/* Summary */}
-      <p className="text-xs text-muted-foreground leading-relaxed line-clamp-3">
+      <p className="text-[11px] text-muted-foreground leading-relaxed">
         {result.summary}
       </p>
     </div>
@@ -132,21 +160,29 @@ function DimensionCard({ title, icon, result }: DimensionCardProps) {
 // ── Main panel ────────────────────────────────────────────────────────────────
 
 export function RiskDimensionsPanel({ riskDimensions }: RiskDimensionsPanelProps) {
+  // Graceful no-op if data is missing (Task 9 stability)
+  if (!riskDimensions) return null
+
   return (
     <Card className="p-6 border border-border/60">
       {/* Section header */}
-      <div className="flex items-center gap-2 mb-5">
-        <div className="p-1.5 rounded-lg bg-primary/10">
-          <Layers className="w-4 h-4 text-primary" />
+      <div className="flex items-center justify-between gap-2 mb-5">
+        <div className="flex items-center gap-2">
+          <div className="p-1.5 rounded-lg bg-primary/10">
+            <Layers className="w-4 h-4 text-primary" />
+          </div>
+          <div>
+            <h3 className="text-base font-semibold text-foreground leading-tight">
+              Multidimensional Risk Analysis
+            </h3>
+            <p className="text-[11px] text-muted-foreground">
+              Heuristic interpretation · No real-time monitoring or vulnerability scanning
+            </p>
+          </div>
         </div>
-        <div>
-          <h3 className="text-base font-semibold text-foreground leading-tight">
-            Multidimensional Risk Analysis
-          </h3>
-          <p className="text-xs text-muted-foreground">
-            Derived from code metrics · Heuristic interpretation
-          </p>
-        </div>
+
+        {/* Confidence badge (Task 5 — small, non-intrusive) */}
+        <ConfidenceBadge confidence={riskDimensions.confidence} />
       </div>
 
       {/* Interpretation summary banner */}
@@ -163,22 +199,25 @@ export function RiskDimensionsPanel({ riskDimensions }: RiskDimensionsPanelProps
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <DimensionCard
           title="Maintainability"
+          subtitle="Code quality &amp; complexity"
           icon={<Wrench className="w-3.5 h-3.5" />}
           result={riskDimensions.maintainability}
         />
         <DimensionCard
           title="Deployment Stability"
+          subtitle="Coupling &amp; integration"
           icon={<Layers className="w-3.5 h-3.5" />}
           result={riskDimensions.deployment_stability}
         />
         <DimensionCard
-          title="Security Exposure"
-          icon={<ShieldCheck className="w-3.5 h-3.5" />}
+          title="Review Complexity"
+          subtitle="Structural heuristic only"
+          icon={<ShieldAlert className="w-3.5 h-3.5" />}
           result={riskDimensions.security_exposure}
         />
       </div>
 
-      {/* Grading legend */}
+      {/* Grading legend + disclaimer */}
       <div className="flex flex-wrap items-center gap-3 mt-4 pt-4 border-t border-border/40">
         <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">
           Grade Scale:
@@ -195,6 +234,9 @@ export function RiskDimensionsPanel({ riskDimensions }: RiskDimensionsPanelProps
             </div>
           )
         })}
+        <span className="text-[10px] text-muted-foreground ml-auto italic">
+          Heuristic estimates · Not predictive of production outcomes
+        </span>
       </div>
     </Card>
   )
