@@ -38,48 +38,14 @@ async def list_history(
     
     results = []
     for pred in history:
-        # Map ORM to IntelligenceResponse
-        # ── Target Name Resolution (Task 1: REAL repository names) ───────────
-        target_name = "Analysis"
+        # ── Target Name Resolution (Task 1: Simple URL display) ──────────────
+        target_name = "Unknown Repository"
         
         if pred.workflow_run:
-            repo = pred.workflow_run.repository
-            
-            # Priority 1: Actual repository name from relationship
-            # But filter out generic placeholders like 'riskops-demo'
-            name_candidate = repo.name if repo else None
-            
-            # Priority 2: Extract from URL if name is generic or missing (Task 1: derived label)
-            if (not name_candidate or name_candidate == "riskops-demo") and repo and repo.repo_url:
-                try:
-                    url = repo.repo_url.lower()
-                    # Strip protocol and domains
-                    clean_url = url.replace("https://", "").replace("http://", "")
-                    clean_url = clean_url.replace("www.github.com/", "").replace("github.com/", "")
-                    
-                    # Ensure we have user/repo format
-                    if "/" in clean_url:
-                        name_candidate = clean_url.strip("/")
-                    else:
-                        # Fallback to last part if no slash remains (unlikely but safe)
-                        url_parts = repo.repo_url.rstrip('/').split('/')
-                        if len(url_parts) >= 2:
-                            name_candidate = url_parts[-1]
-                except Exception:
-                    pass
-            
-            # Priority 3: Fallback to workflow name (if not ad-hoc)
-            if not name_candidate or name_candidate == "Ad-hoc Analysis":
-                name_candidate = pred.workflow_run.workflow_name
-                
-            # Priority 4: Fallback to analysis type
-            if not name_candidate or name_candidate == "Ad-hoc Analysis":
-                name_candidate = pred.analysis_type.capitalize() if pred.analysis_type else "Analysis"
-            
-            target_name = name_candidate
-        else:
-            # Absolute fallback
-            target_name = pred.analysis_type.capitalize() if pred.analysis_type else "Analysis"
+            if pred.workflow_run.repository and pred.workflow_run.repository.repo_url:
+                target_name = pred.workflow_run.repository.repo_url
+            else:
+                target_name = pred.workflow_run.workflow_name or "Unknown Repository"
         # ──────────────────────────────────────────────────────────────────────
 
         results.append(
@@ -127,47 +93,14 @@ async def get_history_detail(
             detail="Analysis report not found"
         )
         
-    # ── Target Name Resolution (Task 1: REAL repository names) ───────────
-    target_name = "Analysis"
+    # ── Target Name Resolution (Task 1: Simple URL display) ──────────────
+    target_name = "Unknown Repository"
     
     if pred.workflow_run:
-        repo = pred.workflow_run.repository
-        
-        # Priority 1: Actual repository name from relationship
-        # But filter out generic placeholders like 'riskops-demo'
-        name_candidate = repo.name if repo else None
-        
-        # Priority 2: Extract from URL if name is generic or missing (Task 1: derived label)
-        if (not name_candidate or name_candidate == "riskops-demo") and repo and repo.repo_url:
-            try:
-                url = repo.repo_url.lower()
-                # Strip protocol and domains
-                clean_url = url.replace("https://", "").replace("http://", "")
-                clean_url = clean_url.replace("www.github.com/", "").replace("github.com/", "")
-                
-                # Ensure we have user/repo format
-                if "/" in clean_url:
-                    name_candidate = clean_url.strip("/")
-                else:
-                    # Fallback to last part if no slash remains
-                    url_parts = repo.repo_url.rstrip('/').split('/')
-                    if len(url_parts) >= 2:
-                        name_candidate = url_parts[-1]
-            except Exception:
-                pass
-        
-        # Priority 3: Fallback to workflow name (if not ad-hoc)
-        if not name_candidate or name_candidate == "Ad-hoc Analysis":
-            name_candidate = pred.workflow_run.workflow_name
-            
-        # Priority 4: Fallback to analysis type
-        if not name_candidate or name_candidate == "Ad-hoc Analysis":
-            name_candidate = pred.analysis_type.capitalize() if pred.analysis_type else "Analysis"
-        
-        target_name = name_candidate
-    else:
-        # Absolute fallback
-        target_name = pred.analysis_type.capitalize() if pred.analysis_type else "Analysis"
+        if pred.workflow_run.repository and pred.workflow_run.repository.repo_url:
+            target_name = pred.workflow_run.repository.repo_url
+        else:
+            target_name = pred.workflow_run.workflow_name or "Unknown Repository"
     # ──────────────────────────────────────────────────────────────────────
 
     def parse_recommendation(rec):

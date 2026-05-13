@@ -33,7 +33,8 @@ async def analyze_and_persist(
     request: PredictionRequest,
     session: AsyncSession,
     workflow_run_id: Optional[uuid.UUID] = None,
-    analysis_type: str = "manual"
+    analysis_type: str = "manual",
+    repo_url: Optional[str] = None
 ) -> IntelligenceResponse:
     """
     Orchestrate the full intelligence flow.
@@ -45,19 +46,52 @@ async def analyze_and_persist(
     # If no workflow_run_id is provided, create a dummy WorkflowRun for ad-hoc persistence
     telemetry_repo = TelemetryRepository(session)
     if workflow_run_id is None:
-        # Fetch the first repository to avoid foreign key violation
+        # Resolve repository for this analysis (Task: Persist REAL URL)
         from app.models.repository import Repository
         from sqlalchemy import select
-        repo_stmt = select(Repository).limit(1)
-        repo_result = await session.execute(repo_stmt)
-        default_repo = repo_result.scalars().first()
         
-        if not default_repo:
-            logger.error("no_repository_found_for_ad_hoc_analysis")
-            raise RuntimeError("Database must have at least one repository to perform analysis.")
+        target_repo_id = None
+        if repo_url:
+            repo_stmt = select(Repository).where(Repository.repo_url == repo_url)
+            repo_result = await session.execute(repo_stmt)
+            existing_repo = repo_result.scalars().first()
+            
+            if existing_repo:
+                target_repo_id = existing_repo.id
+            else:
+                # Create a minimal repository record for the new URL
+                try:
+                    # Simple parsing: https://github.com/owner/name
+                    parts = repo_url.rstrip('/').split('/')
+                    name = parts[-1] if len(parts) > 0 else "Unknown"
+                    owner = parts[-2] if len(parts) > 1 else "Unknown"
+                    
+                    new_repo = Repository(
+                        repo_url=repo_url,
+                        owner=owner,
+                        name=name,
+                        full_name=f"{owner}/{name}",
+                        connection_status="connected"
+                    )
+                    session.add(new_repo)
+                    await session.flush() # Get the ID
+                    target_repo_id = new_repo.id
+                except Exception as e:
+                    logger.warning("failed_to_create_repo_for_url", url=repo_url, error=str(e))
+
+        # Absolute fallback if no repo resolved
+        if not target_repo_id:
+            repo_stmt = select(Repository).limit(1)
+            repo_result = await session.execute(repo_stmt)
+            default_repo = repo_result.scalars().first()
+            if default_repo:
+                target_repo_id = default_repo.id
+            else:
+                logger.error("no_repository_found_for_ad_hoc_analysis")
+                raise RuntimeError("Database must have at least one repository to perform analysis.")
 
         run = WorkflowRun(
-            repository_id=default_repo.id,
+            repository_id=target_repo_id,
             github_run_id=int(uuid.uuid4().int >> 96), # Random dummy GH ID
             workflow_name="Ad-hoc Analysis",
             status="completed",
@@ -65,7 +99,7 @@ async def analyze_and_persist(
         )
         await telemetry_repo.create_workflow_run(run)
         workflow_run_id = run.id
-        logger.info("created_ad_hoc_workflow_run", workflow_run_id=str(workflow_run_id))
+        logger.info("created_ad_hoc_workflow_run", workflow_run_id=str(workflow_run_id), repo_url=repo_url)
     else:
         # Validate existence
         run = await telemetry_repo.get_workflow_run_by_id(workflow_run_id)
@@ -236,34 +270,14 @@ async def analyze_and_persist(
             repo_result = await session.execute(repo_stmt)
             repo = repo_result.scalars().first()
             
-        # Target Name Resolution (Task 1: REAL repository names)
-        name_candidate = repo.name if repo else None
+        # Target Name Resolution (Task 1: Simple URL display)
+        target_name = "Unknown Repository"
         
-        # Priority: Extract from URL if name is generic or missing (Task 1: derived label)
-        if (not name_candidate or name_candidate == "riskops-demo") and repo and repo.repo_url:
-            try:
-                url = repo.repo_url.lower()
-                # Strip protocol and domains
-                clean_url = url.replace("https://", "").replace("http://", "")
-                clean_url = clean_url.replace("www.github.com/", "").replace("github.com/", "")
-                
-                # Ensure we have user/repo format
-                if "/" in clean_url:
-                    name_candidate = clean_url.strip("/")
-                else:
-                    # Fallback to last part if no slash remains
-                    url_parts = repo.repo_url.rstrip('/').split('/')
-                    if len(url_parts) >= 2:
-                        name_candidate = url_parts[-1]
-            except Exception:
-                pass
-        
-        # Fallback to workflow name
-        if not name_candidate or name_candidate == "Ad-hoc Analysis":
-            name_candidate = run.workflow_name
-            
-        if name_candidate:
-            target_name = name_candidate
+        if run:
+            if repo and repo.repo_url:
+                target_name = repo.repo_url
+            else:
+                target_name = run.workflow_name or "Unknown Repository"
 
     return IntelligenceResponse(
         workflow_run_id=workflow_run_id,

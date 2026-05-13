@@ -45,8 +45,8 @@ async def analyze_repository(
     # 2. Map to internal PredictionRequest
     request = PredictionRequest(**metrics)
     
-    # 3. Call intelligence engine
-    return await analyze_and_persist(request, db, analysis_type="repository")
+    # 3. Call intelligence engine (Task: Persist REAL URL)
+    return await analyze_and_persist(request, db, analysis_type="repository", repo_url=payload.repository_url)
 
 
 @router.post(
@@ -115,5 +115,5 @@ async def analyze_upload(
     # 2. Map to internal PredictionRequest
     prediction_req = PredictionRequest(**metrics)
     
-    # 3. Call intelligence engine
-    return await analyze_and_persist(prediction_req, db, analysis_type="upload")
+    # 3. Call intelligence engine (Task: Consistent history labels for uploads)
+    return await analyze_and_persist(prediction_req, db, analysis_type="upload", repo_url=f"upload://{filename}")
