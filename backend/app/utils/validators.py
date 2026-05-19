@@ -33,3 +33,34 @@ def slugify(value: str) -> str:
     value = re.sub(r"[^\w\s-]", "", value)
     value = re.sub(r"[\s_]+", "-", value)
     return re.sub(r"-+", "-", value)
+
+
+def is_valid_email(email: str) -> bool:
+    """Simple regex for email validation."""
+    if not email:
+        return False
+    return re.match(r"[^@]+@[^@]+\.[^@]+", email) is not None
+
+
+def validate_sql_safe(value: str) -> bool:
+    """
+    Lightweight defensive check for common SQL injection characters/patterns.
+    Returns False if dangerous patterns are detected.
+    """
+    if not value:
+        return True
+    
+    # Common SQL injection patterns
+    patterns = [
+        r"' OR 1=1",
+        r"--",
+        r";",
+        r"DROP TABLE",
+        r"UNION SELECT",
+        r"OR \"\"=\"",
+    ]
+    
+    for pattern in patterns:
+        if re.search(pattern, value, re.IGNORECASE):
+            return False
+    return True

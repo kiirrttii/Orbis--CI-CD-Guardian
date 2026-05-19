@@ -55,18 +55,22 @@ export function SignupForm() {
       router.push('/how-it-works')
 
     } catch (error: any) {
-      console.error('[Signup ERROR]', error)
+      let message = 'Signup failed. Please try again.'
+      
+      if (error.response?.data) {
+        const data = error.response.data
+        if (typeof data.detail === 'string') {
+          message = data.detail
+        } else if (Array.isArray(data.detail)) {
+          message = data.detail[0]?.msg || JSON.stringify(data.detail)
+        } else if (data.message) {
+          message = data.message
+        }
+      } else if (error.message) {
+        message = error.message
+      }
 
-      const message =
-        error.response?.data?.detail ||
-        error.message ||
-        'Signup failed. Please try again.'
-
-      toast.error(
-        typeof message === 'string'
-          ? message
-          : JSON.stringify(message)
-      )
+      toast.error(message)
 
     } finally {
       setIsLoading(false)

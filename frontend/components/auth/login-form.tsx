@@ -40,15 +40,8 @@ export function LoginForm() {
     },
   })
 
-  // SCREAMING DEBUG: Watch for validation errors
-  useEffect(() => {
-    if (Object.keys(errors).length > 0) {
-      console.error('[LoginForm] VALIDATION ERRORS:', errors)
-    }
-  }, [errors])
 
   async function onSubmit(data: LoginFormData) {
-    window.alert('Login button clicked! Starting submission...')
     console.log('[LoginForm] SUBMIT TRIGGERED', {
       email: data.email,
     })
@@ -75,9 +68,18 @@ export function LoginForm() {
       router.push('/how-it-works')
 
     } catch (error: any) {
-      const message =
-        error.response?.data?.detail ||
-        'Login failed. Please try again.'
+      let message = 'Login failed. Please try again.'
+      
+      if (error.response?.data) {
+        const data = error.response.data
+        if (typeof data.detail === 'string') {
+          message = data.detail
+        } else if (Array.isArray(data.detail)) {
+          message = data.detail[0]?.msg || JSON.stringify(data.detail)
+        } else if (data.message) {
+          message = data.message
+        }
+      }
 
       toast.error(message)
 

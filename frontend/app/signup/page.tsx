@@ -53,6 +53,27 @@ export default function SignupPage() {
               Deploy with confidence using our predictive risk engine and real-time telemetry monitoring.
             </p>
           </div>
+
+          <div className="space-y-3 text-sm">
+            <div className="flex items-start gap-3">
+              <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <span className="text-primary font-bold text-xs">✓</span>
+              </div>
+              <p className="text-foreground">Hardened SQL injection resilience</p>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <span className="text-primary font-bold text-xs">✓</span>
+              </div>
+              <p className="text-foreground">SHAP explainability for every prediction</p>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <span className="text-primary font-bold text-xs">✓</span>
+              </div>
+              <p className="text-foreground">Comprehensive deployment monitoring</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>

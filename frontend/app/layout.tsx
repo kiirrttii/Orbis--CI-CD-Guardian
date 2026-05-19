@@ -4,6 +4,7 @@ import { Analytics } from '@vercel/analytics/next'
 import { ThemeProvider } from '@/components/theme-provider'
 import { AuthProvider } from '@/components/auth/auth-provider'
 import { QueryProvider } from '@/components/providers/query-provider'
+import { Toaster } from '@/components/ui/sonner'
 import './globals.css'
 
 const _geist = Geist({ subsets: ["latin"] });
@@ -38,6 +39,7 @@ export default function RootLayout({
           >
             <AuthProvider>
               {children}
+              <Toaster />
               {process.env.NODE_ENV === 'production' && <Analytics />}
             </AuthProvider>
           </ThemeProvider>

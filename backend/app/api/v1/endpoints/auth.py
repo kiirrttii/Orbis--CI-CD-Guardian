@@ -13,6 +13,8 @@ from app.core.security import create_access_token, verify_password, hash_passwor
 from app.database.session import get_db
 from app.models.user import User
 from app.schemas.auth import LoginRequest, TokenResponse, UserResponse, VerifyResponse, SignupRequest
+from app.utils.validators import is_valid_email, validate_sql_safe
+from sqlalchemy.exc import SQLAlchemyError
 
 router = APIRouter()
 
@@ -26,6 +28,18 @@ async def signup(
     request: SignupRequest,
     db: AsyncSession = Depends(get_db)
 ):
+    if not is_valid_email(request.email):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid email format",
+        )
+
+    if not validate_sql_safe(request.email) or not validate_sql_safe(request.full_name):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Malformed input detected",
+        )
+
     stmt = select(User).where(User.email == request.email)
     result = await db.execute(stmt)
     existing_user = result.scalars().first()
@@ -61,6 +75,18 @@ async def login(
     request: LoginRequest,
     db: AsyncSession = Depends(get_db)
 ):
+    if not is_valid_email(request.email):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid email format",
+        )
+
+    if not validate_sql_safe(request.email):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Malformed input detected",
+        )
+
     print(f"[Auth] Login request for email: {request.email}")
     stmt = select(User).where(User.email == request.email)
     result = await db.execute(stmt)
@@ -70,14 +96,14 @@ async def login(
         print(f"[Auth] User not found: {request.email}")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="User does not exist, please sign up",
+            detail="Account not found. Please sign up first.",
         )
     
     if not verify_password(request.password, user.hashed_password):
         print(f"[Auth] Password mismatch for: {request.email}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password",
+            detail="Invalid email or password.",
         )
         
     if not user.is_active:

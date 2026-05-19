@@ -18,6 +18,7 @@ from app.schemas.intelligence import IntelligenceResponse
 from app.intelligence.feature_extraction.extractor import FeatureExtractionOrchestrator
 from app.intelligence.orchestrator import analyze_and_persist
 from app.core.logging import get_logger
+from app.utils.validators import is_valid_github_url, validate_sql_safe
 
 router = APIRouter()
 logger = get_logger(__name__)
@@ -37,6 +38,22 @@ async def analyze_repository(
     Operational endpoint to analyze risk based on repository metadata.
     Hides internal ML feature generation.
     """
+    # 0. Validation (Task 4)
+    if not payload.repository_url:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Repository URL is required")
+        
+    if not is_valid_github_url(payload.repository_url):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid GitHub repository URL format. Use: https://github.com/owner/repo"
+        )
+
+    if not validate_sql_safe(payload.repository_url):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Malformed input detected"
+        )
+
     # 1. Extract metrics (mock/simulated)
     metrics = FeatureExtractionOrchestrator.from_repository(
         payload.repository_url, payload.branch

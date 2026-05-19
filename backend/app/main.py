@@ -148,10 +148,38 @@ def create_app() -> FastAPI:
 
     @app.exception_handler(ValueError)
     async def value_error_handler(request: Request, exc: ValueError):
-        logger.warning("unhandled_value_error", error=str(exc))
+        error_msg = str(exc)
+        # Check if the error message looks like an internal library error
+        # Bcrypt/Passlib errors or other library-specific messages should be masked
+        internal_patterns = ["password cannot be longer than", "bcrypt", "crypt_context"]
+        if any(p in error_msg.lower() for p in internal_patterns):
+            logger.error("internal_validation_error", error=error_msg, exc_info=True)
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content={
+                    "code": "INTERNAL_ERROR",
+                    "message": "Something went wrong. Please try again later.",
+                },
+            )
+        
+        logger.warning("unhandled_value_error", error=error_msg)
         return JSONResponse(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            content={"code": "VALIDATION_ERROR", "message": str(exc)},
+            content={"code": "VALIDATION_ERROR", "message": error_msg},
+        )
+
+    from sqlalchemy.exc import SQLAlchemyError
+    @app.exception_handler(SQLAlchemyError)
+    async def sqlalchemy_exception_handler(request: Request, exc: SQLAlchemyError):
+        # Log the real error for server-side debugging
+        logger.error("database_integrity_error", error=str(exc), exc_info=True)
+        # Return a safe, generic message to the user
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={
+                "code": "DATABASE_ERROR",
+                "message": "Something went wrong. Please try again later.",
+            },
         )
 
     @app.exception_handler(Exception)
@@ -161,7 +189,7 @@ def create_app() -> FastAPI:
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content={
                 "code": "INTERNAL_SERVER_ERROR",
-                "message": "An unexpected error occurred.",
+                "message": "Something went wrong. Please try again later.",
             },
         )
 
