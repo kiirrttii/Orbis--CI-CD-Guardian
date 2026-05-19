@@ -10,8 +10,8 @@ from typing import Sequence, Union
 from alembic import op
 import sqlalchemy as sa
 
-CURRENT_TIMESTAMP_SQL = CURRENT_TIMESTAMP_SQL
-WORKFLOW_RUNS_ID = WORKFLOW_RUNS_ID
+CURRENT_TIMESTAMP_SQL = '(CURRENT_TIMESTAMP)'
+WORKFLOW_RUNS_ID = 'workflow_runs.id'
 
 
 

@@ -29,10 +29,7 @@ import type { AnalysisResponse } from '@/lib/api-types'
 const formatRepoLabel = (name: string) => {
   if (!name) return 'Unknown Repository'
   return name
-    .replace('https://github.com/', '')
-    .replace('http://github.com/', '')
-    .replace('https://www.github.com/', '')
-    .replace('http://www.github.com/', '')
+    .replace(/https?:\/\/(www\.)?github\.com\//, '')
     .replace('upload://', '')
 }
 

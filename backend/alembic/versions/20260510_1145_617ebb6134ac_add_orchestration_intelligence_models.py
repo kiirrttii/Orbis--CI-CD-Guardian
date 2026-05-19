@@ -10,7 +10,7 @@ from typing import Sequence, Union
 from alembic import op
 import sqlalchemy as sa
 
-CURRENT_TIMESTAMP_SQL = CURRENT_TIMESTAMP_SQL
+CURRENT_TIMESTAMP_SQL = '(CURRENT_TIMESTAMP)'
 
 
 
