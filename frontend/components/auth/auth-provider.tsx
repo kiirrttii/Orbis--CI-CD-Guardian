@@ -57,6 +57,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error: any) {
       if (error?.response?.status === 401) {
         console.warn('[AuthProvider] Token expired or invalid, clearing session.')
+      } else if (error?.code === 'ERR_NETWORK' || error?.message === 'Network Error') {
+        console.error('[AuthProvider] Backend network or CORS failure. Unable to reach API.', error.message)
+      } else if (error?.code === 'ECONNABORTED' || error?.message?.includes('timeout')) {
+        console.error('[AuthProvider] Backend connection timed out. Server might be under heavy load.', error.message)
       } else {
         console.error('[AuthProvider] Verification failed:', error)
       }

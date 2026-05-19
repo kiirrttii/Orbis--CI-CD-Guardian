@@ -7,7 +7,7 @@ from typing import Optional
 
 
 GITHUB_REPO_URL_RE = re.compile(
-    r"^https://github\.com/(?P<owner>[\w\-\.]+)/(?P<repo>[\w\-\.]+)/?$"
+    r"^(?:https?://)?(?:www\.)?(?:github\.com/)?(?P<owner>[\w\-\.]+)/(?P<repo>[\w\-\.]+)/?$"
 )
 
 
@@ -16,7 +16,10 @@ def parse_github_url(url: str) -> Optional[tuple[str, str]]:
     Parse a GitHub repository URL and return (owner, repo_name).
     Returns None if the URL is not a valid GitHub repo URL.
     """
-    match = GITHUB_REPO_URL_RE.match(url.rstrip("/"))
+    if not url:
+        return None
+    url = url.strip()
+    match = GITHUB_REPO_URL_RE.match(url)
     if not match:
         return None
     return match.group("owner"), match.group("repo")

@@ -6,6 +6,7 @@ Routes for login, user retrieval, verification, and logout.
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Annotated
 
 from app.core.auth import get_current_user
 from app.core.config import settings
@@ -26,7 +27,7 @@ router = APIRouter()
 )
 async def signup(
     request: SignupRequest,
-    db: AsyncSession = Depends(get_db)
+    db: Annotated[AsyncSession, Depends(get_db)]
 ):
     if not is_valid_email(request.email):
         raise HTTPException(
@@ -73,7 +74,7 @@ async def signup(
 )
 async def login(
     request: LoginRequest,
-    db: AsyncSession = Depends(get_db)
+    db: Annotated[AsyncSession, Depends(get_db)]
 ):
     if not is_valid_email(request.email):
         raise HTTPException(
@@ -146,8 +147,8 @@ from app.services.user_service import UserService
     summary="Get current authenticated user with full details",
 )
 async def read_users_me(
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)]
 ):
     service = UserService(db)
     return service.map_to_detailed_response(current_user)
@@ -159,8 +160,8 @@ async def read_users_me(
 )
 async def update_user_me(
     update_data: UserUpdate,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)]
 ):
     service = UserService(db)
     updated_user = await service.update_user(current_user, update_data)
@@ -172,8 +173,8 @@ async def update_user_me(
     summary="Verify token validity",
 )
 async def verify_token(
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)]
 ):
     service = UserService(db)
     return VerifyResponse(

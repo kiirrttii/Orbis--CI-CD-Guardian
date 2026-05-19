@@ -10,6 +10,9 @@ from typing import Sequence, Union
 from alembic import op
 import sqlalchemy as sa
 
+CURRENT_TIMESTAMP_SQL = CURRENT_TIMESTAMP_SQL
+
+
 
 # revision identifiers, used by Alembic.
 revision: str = '617ebb6134ac'
@@ -28,8 +31,8 @@ def upgrade() -> None:
     sa.Column('auth_config', sa.JSON(), nullable=True),
     sa.Column('last_sync', sa.DateTime(timezone=True), nullable=True),
     sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text(CURRENT_TIMESTAMP_SQL), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text(CURRENT_TIMESTAMP_SQL), nullable=False),
     sa.PrimaryKeyConstraint('id')
     )
     with op.batch_alter_table('integrations', schema=None) as batch_op:
@@ -42,8 +45,8 @@ def upgrade() -> None:
     sa.Column('owning_team', sa.String(), nullable=True),
     sa.Column('criticality_level', sa.Integer(), nullable=False),
     sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text(CURRENT_TIMESTAMP_SQL), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text(CURRENT_TIMESTAMP_SQL), nullable=False),
     sa.PrimaryKeyConstraint('id')
     )
     with op.batch_alter_table('service_registry', schema=None) as batch_op:
@@ -59,8 +62,8 @@ def upgrade() -> None:
     sa.Column('severity', sa.String(), nullable=False),
     sa.Column('supporting_event_ids', sa.JSON(), nullable=False),
     sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text(CURRENT_TIMESTAMP_SQL), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text(CURRENT_TIMESTAMP_SQL), nullable=False),
     sa.ForeignKeyConstraint(['service_id'], ['service_registry.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
@@ -78,8 +81,8 @@ def upgrade() -> None:
     sa.Column('normalized_data', sa.JSON(), nullable=False),
     sa.Column('operational_impact', sa.Integer(), nullable=True),
     sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text(CURRENT_TIMESTAMP_SQL), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text(CURRENT_TIMESTAMP_SQL), nullable=False),
     sa.ForeignKeyConstraint(['integration_id'], ['integrations.id'], ),
     sa.ForeignKeyConstraint(['service_id'], ['service_registry.id'], ),
     sa.PrimaryKeyConstraint('id')
@@ -96,8 +99,8 @@ def upgrade() -> None:
     sa.Column('confidence_score', sa.Float(), nullable=False),
     sa.Column('impact_level', sa.String(), nullable=True),
     sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text(CURRENT_TIMESTAMP_SQL), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text(CURRENT_TIMESTAMP_SQL), nullable=False),
     sa.ForeignKeyConstraint(['related_event_id'], ['orchestration_events.id'], ),
     sa.ForeignKeyConstraint(['source_event_id'], ['orchestration_events.id'], ),
     sa.PrimaryKeyConstraint('id')

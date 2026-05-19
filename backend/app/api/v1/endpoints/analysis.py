@@ -4,7 +4,7 @@ Higher-level orchestration routes that hide ML internals.
 """
 
 import uuid
-from typing import Optional
+from typing import Optional, Annotated
 from fastapi import APIRouter, Depends, HTTPException, Request, status, Query
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -18,21 +18,20 @@ from app.schemas.intelligence import IntelligenceResponse
 from app.intelligence.feature_extraction.extractor import FeatureExtractionOrchestrator
 from app.intelligence.orchestrator import analyze_and_persist
 from app.core.logging import get_logger
-from app.utils.validators import is_valid_github_url, validate_sql_safe
+from app.utils.validators import parse_github_url, validate_sql_safe
 
 router = APIRouter()
 logger = get_logger(__name__)
 
 @router.post(
     "/repository",
-    response_model=IntelligenceResponse,
     status_code=status.HTTP_200_OK,
     summary="Analyze deployment risk for a repository",
 )
 async def analyze_repository(
     payload: RepositoryAnalysisRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)]
 ) -> IntelligenceResponse:
     """
     Operational endpoint to analyze risk based on repository metadata.
@@ -42,40 +41,43 @@ async def analyze_repository(
     if not payload.repository_url:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Repository URL is required")
         
-    if not is_valid_github_url(payload.repository_url):
+    parsed_repo = parse_github_url(payload.repository_url)
+    if not parsed_repo:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid GitHub repository URL format. Use: https://github.com/owner/repo"
+            detail="Invalid GitHub repository URL format. Supported formats: https://github.com/owner/repo or owner/repo"
         )
+        
+    owner, repo = parsed_repo
+    normalized_url = f"https://github.com/{owner}/{repo}"
 
-    if not validate_sql_safe(payload.repository_url):
+    if not validate_sql_safe(payload.branch):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Malformed input detected"
+            detail="Malformed branch name detected: unsafe characters found"
         )
 
     # 1. Extract metrics (mock/simulated)
     metrics = FeatureExtractionOrchestrator.from_repository(
-        payload.repository_url, payload.branch
+        normalized_url, payload.branch
     )
     
     # 2. Map to internal PredictionRequest
     request = PredictionRequest(**metrics)
     
     # 3. Call intelligence engine (Task: Persist REAL URL)
-    return await analyze_and_persist(request, db, analysis_type="repository", repo_url=payload.repository_url)
+    return await analyze_and_persist(request, db, analysis_type="repository", repo_url=normalized_url)
 
 
 @router.post(
     "/telemetry",
-    response_model=IntelligenceResponse,
     status_code=status.HTTP_200_OK,
     summary="Analyze risk for a specific workflow run",
 )
 async def analyze_telemetry(
     payload: TelemetryAnalysisRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)]
 ) -> IntelligenceResponse:
     """
     Analyzes deployment risk using telemetry metadata for a specific run.
@@ -110,15 +112,14 @@ async def analyze_telemetry(
 
 @router.post(
     "/upload",
-    response_model=IntelligenceResponse,
     status_code=status.HTTP_200_OK,
     summary="Analyze risk from an uploaded workflow file",
 )
 async def analyze_upload(
     request: Request,
-    filename: str = Query(..., description="Name of the file being uploaded"),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    filename: str = Query(..., description="Name of the file being uploaded")
 ) -> IntelligenceResponse:
     """
     Accepts raw file content (YAML/JSON) and analyzes deployment risk.

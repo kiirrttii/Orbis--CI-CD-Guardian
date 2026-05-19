@@ -10,6 +10,10 @@ from typing import Sequence, Union
 from alembic import op
 import sqlalchemy as sa
 
+CURRENT_TIMESTAMP_SQL = CURRENT_TIMESTAMP_SQL
+WORKFLOW_RUNS_ID = WORKFLOW_RUNS_ID
+
+
 
 # revision identifiers, used by Alembic.
 revision: str = 'bd243482c8a0'
@@ -36,8 +40,8 @@ def upgrade() -> None:
     sa.Column('language', sa.String(length=100), nullable=True),
     sa.Column('stars_count', sa.Integer(), nullable=True),
     sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text(CURRENT_TIMESTAMP_SQL), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text(CURRENT_TIMESTAMP_SQL), nullable=False),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('full_name')
     )
@@ -59,8 +63,8 @@ def upgrade() -> None:
     sa.Column('deletions', sa.Integer(), nullable=True),
     sa.Column('is_merge_commit', sa.Boolean(), nullable=True),
     sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text(CURRENT_TIMESTAMP_SQL), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text(CURRENT_TIMESTAMP_SQL), nullable=False),
     sa.ForeignKeyConstraint(['repository_id'], ['repositories.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
@@ -87,8 +91,8 @@ def upgrade() -> None:
     sa.Column('triggering_actor', sa.String(length=255), nullable=True),
     sa.Column('html_url', sa.Text(), nullable=True),
     sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text(CURRENT_TIMESTAMP_SQL), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text(CURRENT_TIMESTAMP_SQL), nullable=False),
     sa.ForeignKeyConstraint(['commit_id'], ['commits.id'], ondelete='SET NULL'),
     sa.ForeignKeyConstraint(['repository_id'], ['repositories.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id'),
@@ -112,9 +116,9 @@ def upgrade() -> None:
     sa.Column('resolved_at', sa.DateTime(timezone=True), nullable=True),
     sa.Column('notes', sa.Text(), nullable=True),
     sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
-    sa.ForeignKeyConstraint(['workflow_run_id'], ['workflow_runs.id'], ondelete='CASCADE'),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text(CURRENT_TIMESTAMP_SQL), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text(CURRENT_TIMESTAMP_SQL), nullable=False),
+    sa.ForeignKeyConstraint(['workflow_run_id'], [WORKFLOW_RUNS_ID], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_deployment_outcomes_label'), 'deployment_outcomes', ['label'], unique=False)
@@ -132,9 +136,9 @@ def upgrade() -> None:
     sa.Column('feature_version', sa.String(length=50), nullable=False),
     sa.Column('feature_vector', sa.JSON(), nullable=True),
     sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
-    sa.ForeignKeyConstraint(['workflow_run_id'], ['workflow_runs.id'], ondelete='CASCADE'),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text(CURRENT_TIMESTAMP_SQL), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text(CURRENT_TIMESTAMP_SQL), nullable=False),
+    sa.ForeignKeyConstraint(['workflow_run_id'], [WORKFLOW_RUNS_ID], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_extracted_features_workflow_run_id'), 'extracted_features', ['workflow_run_id'], unique=True)
@@ -147,9 +151,9 @@ def upgrade() -> None:
     sa.Column('predicted_label', sa.String(length=50), nullable=False),
     sa.Column('raw_output', sa.JSON(), nullable=True),
     sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
-    sa.ForeignKeyConstraint(['workflow_run_id'], ['workflow_runs.id'], ondelete='CASCADE'),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text(CURRENT_TIMESTAMP_SQL), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text(CURRENT_TIMESTAMP_SQL), nullable=False),
+    sa.ForeignKeyConstraint(['workflow_run_id'], [WORKFLOW_RUNS_ID], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_predictions_workflow_run_id'), 'predictions', ['workflow_run_id'], unique=False)
@@ -162,8 +166,8 @@ def upgrade() -> None:
     sa.Column('contribution_rank', sa.Integer(), nullable=True),
     sa.Column('direction', sa.String(length=20), nullable=True),
     sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text(CURRENT_TIMESTAMP_SQL), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text(CURRENT_TIMESTAMP_SQL), nullable=False),
     sa.ForeignKeyConstraint(['prediction_id'], ['predictions.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
@@ -178,8 +182,8 @@ def upgrade() -> None:
     sa.Column('confidence_score', sa.Float(), nullable=True),
     sa.Column('sort_order', sa.Integer(), nullable=False),
     sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text(CURRENT_TIMESTAMP_SQL), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text(CURRENT_TIMESTAMP_SQL), nullable=False),
     sa.ForeignKeyConstraint(['prediction_id'], ['predictions.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
