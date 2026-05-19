@@ -18,6 +18,7 @@ Design principles:
 - Maintains technical honesty: Disclaimers remain unchanged
 """
 
+import math
 from typing import Dict
 from app.schemas.intelligence import RiskDimensionsPayload, RiskDimensionResult
 
@@ -122,7 +123,7 @@ def apply_structural_stress_amplification(
     factor = _calculate_amplification_factor(indicators)
     
     # Step 3: If no amplification needed, return original
-    if factor == 1.0:
+    if math.isclose(factor, 1.0, rel_tol=1e-9, abs_tol=1e-9):
         return payload, overall_risk_score
     
     # Step 4: Amplify overall risk score

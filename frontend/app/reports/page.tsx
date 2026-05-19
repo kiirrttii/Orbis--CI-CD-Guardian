@@ -86,7 +86,7 @@ export default function ReportsPage() {
     
     if (success) {
       const newDownload: SessionDownload = {
-        id: Math.random().toString(36).substring(7),
+        id: crypto.randomUUID(),
         name: `${selectedAnalysis.target_name}_analysis_${selectedAnalysis.prediction_id.substring(0, 8)}.${type.toLowerCase()}`,
         type,
         date: new Date().toLocaleTimeString(),

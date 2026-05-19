@@ -30,6 +30,7 @@ Design notes:
 
 from __future__ import annotations
 
+import math
 import random
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
@@ -100,7 +101,7 @@ def _weighted_score_capped(features: Dict[str, float], weights: Dict[str, float]
             contributions[feat] = (val * w, w)
             total_weight += w
 
-    if total_weight == 0.0:
+    if math.isclose(total_weight, 0.0, rel_tol=1e-9, abs_tol=1e-9):
         return 0.0
 
     # First pass: raw weighted sum (normalised to [0,100])
