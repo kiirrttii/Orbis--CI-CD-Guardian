@@ -14,6 +14,7 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
+import math
 
 from app.ml.risk_scoring import (
     RiskSeverity,
@@ -29,17 +30,17 @@ from app.ml.risk_scoring import (
 
 class TestComputeRiskScore:
     def test_zero_probability(self):
-        assert compute_risk_score(0.0) == 10.0
+        assert math.isclose(compute_risk_score(0.0), 10.0, rel_tol=1e-9)
 
     def test_full_probability(self):
-        assert compute_risk_score(1.0) == 100.0
+        assert math.isclose(compute_risk_score(1.0), 100.0, rel_tol=1e-9)
 
     def test_midpoint(self):
-        assert compute_risk_score(0.5) == 55.0
+        assert math.isclose(compute_risk_score(0.5), 55.0, rel_tol=1e-9)
 
     def test_rounding(self):
         # 10 + (0.8253 * 90) = 10 + 74.277 = 84.277 -> 84.28
-        assert compute_risk_score(0.8253) == 84.28
+        assert math.isclose(compute_risk_score(0.8253), 84.28, rel_tol=1e-9)
 
     def test_out_of_range_raises(self):
         with pytest.raises(ValueError):
@@ -79,7 +80,7 @@ class TestScoreAndClassify:
         # wait, refinement = (0.9 - 0.5) * 30 = 0.4 * 30 = 12.0
         # heuristic base = 15.0 (no features)
         # final = 15 + 12 = 27.0
-        assert score == 27.0
+        assert math.isclose(score, 27.0, rel_tol=1e-9)
         assert severity == RiskSeverity.LOW
 
     def test_low_severity(self):
@@ -113,7 +114,7 @@ class TestModelRegistry:
         from app.ml.model_loader import ModelRegistry
 
         # Create a tiny dummy sklearn model and save it
-        dummy = DummyClassifier(strategy="most_frequent")
+        dummy = DummyClassifier(strategy="most_frequent", random_state=42)
         dummy.fit([[0] * 10], [0])
         model_path = tmp_path / "model.pkl"
         joblib.dump(dummy, model_path)
@@ -127,7 +128,7 @@ class TestModelRegistry:
         from sklearn.dummy import DummyClassifier
         from app.ml.model_loader import ModelRegistry
 
-        dummy = DummyClassifier()
+        dummy = DummyClassifier(random_state=42)
         dummy.fit([[0] * 10], [0])
         model_path = tmp_path / "model.pkl"
         joblib.dump(dummy, model_path)
@@ -180,7 +181,7 @@ class TestPredictSingle:
         # Heuristic: 15 + 0.5*20 + 0.4*20 + 0.3*15 + 0.5*15 + 0.55*15 + 0.7*15 = 15+10+8+4.5+7.5+8.25+10.5 = 63.75
         # ML Refinement: (0.82 - 0.5) * 30 = 9.6
         # Final: 63.75 + 9.6 = 73.35
-        assert result.risk_score == 73.35
+        assert math.isclose(result.risk_score, 73.35, rel_tol=1e-9)
         assert result.severity == RiskSeverity.HIGH
 
     def test_low_probability_gives_low_severity(self):

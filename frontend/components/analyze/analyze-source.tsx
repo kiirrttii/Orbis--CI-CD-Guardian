@@ -121,7 +121,7 @@ export function AnalyzeSource({
                 }`}
               >
                 <Icon className={`w-5 h-5 mb-2 ${isActive ? 'text-primary' : 'text-muted-foreground'}`} />
-                <p className={`text-sm font-semibold ${isActive ? 'text-foreground' : 'text-foreground'}`}>
+                <p className={`text-sm font-semibold ${isActive ? 'text-foreground' : 'text-muted-foreground'}`}>
                   {mode.label}
                 </p>
                 {mode.badge && (

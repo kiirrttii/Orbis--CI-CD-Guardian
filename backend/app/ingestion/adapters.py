@@ -9,6 +9,7 @@ import json
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import List
+import aiofiles
 
 from app.ingestion.models import TelemetryPayload
 
@@ -29,8 +30,9 @@ class MockGitHubActionsAdapter(TelemetryAdapter):
         if not file_path.exists():
             return []
             
-        with open(file_path, "r") as f:
-            data = json.load(f)
+        async with aiofiles.open(file_path, "r") as f:
+            content = await f.read()
+            data = json.loads(content)
             
         results = []
         for run in data:
@@ -53,8 +55,9 @@ class MockJenkinsAdapter(TelemetryAdapter):
         if not file_path.exists():
             return []
             
-        with open(file_path, "r") as f:
-            data = json.load(f)
+        async with aiofiles.open(file_path, "r") as f:
+            content = await f.read()
+            data = json.loads(content)
             
         results = []
         for run in data:

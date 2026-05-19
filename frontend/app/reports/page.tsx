@@ -120,12 +120,13 @@ export default function ReportsPage() {
         <Card className="p-6 border-primary/20 bg-primary/5">
           <div className="flex flex-col md:flex-row md:items-center gap-6">
             <div className="flex-1 space-y-1">
-              <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Select Analysis Target</label>
+              <label htmlFor="analysis-target" className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Select Analysis Target</label>
               <div className="relative">
                 {historyLoading ? (
                   <div className="h-11 bg-background/50 animate-pulse rounded-xl border border-border" />
                 ) : history.length > 0 ? (
                   <select
+                    id="analysis-target"
                     value={selectedPredictionId}
                     onChange={(e) => setSelectedPredictionId(e.target.value)}
                     className="w-full h-11 bg-background border border-border rounded-xl px-4 text-sm focus:ring-2 focus:ring-primary/20 outline-none appearance-none cursor-pointer"

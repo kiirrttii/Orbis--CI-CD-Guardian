@@ -1,15 +1,14 @@
 import asyncio
 from typing import Any, Callable, Dict, List, Type, Optional
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 import structlog
 
 logger = structlog.get_logger(__name__)
 
 @dataclass
 class DomainEvent:
-    """Base class for all domain events."""
-    timestamp: str = field(default_factory=lambda: datetime.utcnow().isoformat())
+    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 @dataclass
 class UserProfileUpdated(DomainEvent):
@@ -58,7 +57,7 @@ class EventEmitter:
 event_emitter = EventEmitter()
 
 # Default listeners
-async def log_domain_event(event: DomainEvent):
+def log_domain_event(event: DomainEvent):
     logger.info("domain_event_dispatched", event_type=type(event).__name__, data=vars(event))
 
 event_emitter.subscribe(UserProfileUpdated, log_domain_event)

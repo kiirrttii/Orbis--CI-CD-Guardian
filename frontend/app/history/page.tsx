@@ -17,16 +17,13 @@ const severityLevels: SeverityLevel[] = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']
 const formatRepoLabel = (name: string) => {
   if (!name) return 'Unknown Repository'
   return name
-    .replace('https://github.com/', '')
-    .replace('http://github.com/', '')
-    .replace('https://www.github.com/', '')
-    .replace('http://www.github.com/', '')
+    .replace(/https?:\/\/(www\.)?github\.com\//, '')
     .replace('upload://', '')
 }
 
 function getRelativeTime(date: Date | string) {
   const d = typeof date === 'string' ? new Date(date) : date
-  if (isNaN(d.getTime())) return 'Unknown time'
+  if (Number.isNaN(d.getTime())) return 'Unknown time'
   
   const now = new Date()
   const diffInSeconds = Math.floor((now.getTime() - d.getTime()) / 1000)
@@ -41,7 +38,7 @@ function getRelativeTime(date: Date | string) {
 
 function formatFullDate(date: Date | string) {
   const d = typeof date === 'string' ? new Date(date) : date
-  if (isNaN(d.getTime())) return 'Invalid Date'
+  if (Number.isNaN(d.getTime())) return 'Invalid Date'
   return d.toLocaleString(undefined, {
     month: 'short',
     day: 'numeric',

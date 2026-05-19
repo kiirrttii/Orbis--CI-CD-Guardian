@@ -95,7 +95,7 @@ export function AdvancedMetricsMode({
           <div className="text-left">
             <h3 className="text-lg font-semibold text-foreground">ML Feature Metrics</h3>
             <p className="text-sm text-muted-foreground mt-1">
-              {Object.values(values).reduce((a, b) => a + b) > 0 ? 'Custom values configured' : 'Use defaults'}
+              {Object.values(values).reduce((a, b) => a + b, 0) > 0 ? 'Custom values configured' : 'Use defaults'}
             </p>
           </div>
           {expanded ? (

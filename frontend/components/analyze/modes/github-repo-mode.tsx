@@ -66,10 +66,11 @@ export function GitHubRepoMode({
       {/* Input Fields */}
       <div className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-foreground mb-2">
+          <label htmlFor="repo-url" className="block text-sm font-medium text-foreground mb-2">
             GitHub Repository URL
           </label>
           <input
+            id="repo-url"
             type="text"
             placeholder="https://github.com/company/repo-name"
             value={repoUrl}
@@ -81,8 +82,9 @@ export function GitHubRepoMode({
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-foreground mb-2">Branch</label>
+            <label htmlFor="repo-branch" className="block text-sm font-medium text-foreground mb-2">Branch</label>
             <input
+              id="repo-branch"
               type="text"
               placeholder="main"
               value={branch}
@@ -93,8 +95,9 @@ export function GitHubRepoMode({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-foreground mb-2">Pipeline Type</label>
+            <label htmlFor="pipeline-type" className="block text-sm font-medium text-foreground mb-2">Pipeline Type</label>
             <select
+              id="pipeline-type"
               value={pipelineType}
               onChange={(e) => setPipelineType(e.target.value)}
               disabled={localLoading || isLoading}

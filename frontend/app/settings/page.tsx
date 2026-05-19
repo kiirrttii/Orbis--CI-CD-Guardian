@@ -206,8 +206,9 @@ export default function SettingsPage() {
               </div>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">Full Name</label>
+                  <label htmlFor="full-name" className="block text-sm font-medium text-foreground mb-2">Full Name</label>
                   <input
+                    id="full-name"
                     type="text"
                     value={displayData.full_name || ''}
                     onChange={(e) => setDraft(prev => ({ ...prev, full_name: e.target.value }))}
@@ -216,11 +217,12 @@ export default function SettingsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-2 flex items-center gap-2">
+                  <label htmlFor="email" className="block text-sm font-medium text-foreground mb-2 flex items-center gap-2">
                     <Mail className="w-4 h-4" />
                     Email Address
                   </label>
                   <input
+                    id="email"
                     type="email"
                     value={displayData.email || ''}
                     onChange={(e) => setDraft(prev => ({ ...prev, email: e.target.value }))}
@@ -229,8 +231,9 @@ export default function SettingsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">Role</label>
+                  <label htmlFor="role" className="block text-sm font-medium text-foreground mb-2">Role</label>
                   <select 
+                    id="role"
                     value={displayData.role || ''}
                     onChange={(e) => setDraft(prev => ({ ...prev, role: e.target.value as any }))}
                     className="w-full px-4 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
@@ -249,8 +252,9 @@ export default function SettingsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">Workspace</label>
+                  <label htmlFor="workspace" className="block text-sm font-medium text-foreground mb-2">Workspace</label>
                   <input
+                    id="workspace"
                     type="text"
                     value="Orbis Workspace"
                     disabled
@@ -325,11 +329,12 @@ export default function SettingsPage() {
               <h2 className="text-lg font-semibold text-foreground mb-4">API Configuration</h2>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-2 flex items-center gap-2">
+                  <label htmlFor="api-base-url" className="block text-sm font-medium text-foreground mb-2 flex items-center gap-2">
                     <Key className="w-4 h-4" />
                     API Base URL
                   </label>
                   <input
+                    id="api-base-url"
                     type="text"
                     defaultValue="http://localhost:8000/api/v1"
                     className="w-full px-4 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary font-mono text-sm"
@@ -415,7 +420,7 @@ export default function SettingsPage() {
                     value={displayData.preferences?.refresh_interval || 30}
                     onChange={(e) => setDraft(prev => ({
                       ...prev,
-                      preferences: { ...(prev.preferences || currentUser.preferences), refresh_interval: parseInt(e.target.value) }
+                      preferences: { ...(prev.preferences || currentUser.preferences), refresh_interval: Number.parseInt(e.target.value) }
                     }))}
                     className="px-3 py-1 border border-border rounded bg-background text-foreground text-sm"
                   >
