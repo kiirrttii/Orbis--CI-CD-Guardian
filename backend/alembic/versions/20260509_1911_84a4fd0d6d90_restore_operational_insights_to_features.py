@@ -19,10 +19,22 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.add_column('feature_contributions', sa.Column('operational_insight', sa.String(length=500), nullable=True))
-    op.add_column('feature_contributions', sa.Column('signal_type', sa.String(length=50), nullable=False, server_default='STABLE'))
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    columns = [c['name'] for c in inspector.get_columns('feature_contributions')]
+    
+    if 'operational_insight' not in columns:
+        op.add_column('feature_contributions', sa.Column('operational_insight', sa.String(length=500), nullable=True))
+    if 'signal_type' not in columns:
+        op.add_column('feature_contributions', sa.Column('signal_type', sa.String(length=50), nullable=False, server_default='STABLE'))
 
 
 def downgrade() -> None:
-    op.drop_column('feature_contributions', 'signal_type')
-    op.drop_column('feature_contributions', 'operational_insight')
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    columns = [c['name'] for c in inspector.get_columns('feature_contributions')]
+    
+    if 'signal_type' in columns:
+        op.drop_column('feature_contributions', 'signal_type')
+    if 'operational_insight' in columns:
+        op.drop_column('feature_contributions', 'operational_insight')

@@ -1,0 +1,28 @@
+# Version Control
+.git
+.gitignore
+
+# Environments
+.env
+.env.*
+!.env.example
+
+# Docker
+.dockerignore
+Dockerfile
+
+# Dependencies & Build
+node_modules/
+.next/
+out/
+build/
+dist/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# OS & Editor
+.DS_Store
+.vscode/
+.idea/

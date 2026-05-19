@@ -1,0 +1,29 @@
+# Version Control
+.git
+.gitignore
+
+# Environments
+.env
+.env.*
+!.env.example
+
+# Docker
+docker-compose.yml
+.dockerignore
+
+# IDEs
+.vscode/
+.idea/
+.DS_Store
+
+# Frontend
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/build/
+
+# Backend
+backend/venv/
+backend/__pycache__/
+backend/*.pyc
+backend/.pytest_cache/

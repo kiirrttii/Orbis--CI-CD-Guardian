@@ -22,7 +22,7 @@ from app.services.repository_service import RepositoryService
 
 logger = get_logger(__name__)
 
-router = APIRouter(prefix="/repositories", tags=["Repositories"])
+router = APIRouter()
 
 
 # ---------------------------------------------------------------------------

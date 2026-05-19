@@ -17,10 +17,10 @@ if TYPE_CHECKING:
 
 
 class ConnectionStatus(str, enum.Enum):
-    PENDING = "pending"
-    CONNECTED = "connected"
-    FAILED = "failed"
-    DISCONNECTED = "disconnected"
+    PENDING = "PENDING"
+    CONNECTED = "CONNECTED"
+    FAILED = "FAILED"
+    DISCONNECTED = "DISCONNECTED"
 
 
 class Repository(BaseModel):

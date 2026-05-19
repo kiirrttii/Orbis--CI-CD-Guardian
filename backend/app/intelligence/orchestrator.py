@@ -66,12 +66,13 @@ async def analyze_and_persist(
                     name = parts[-1] if len(parts) > 0 else "Unknown"
                     owner = parts[-2] if len(parts) > 1 else "Unknown"
                     
+                    from app.models.repository import ConnectionStatus
                     new_repo = Repository(
                         repo_url=repo_url,
                         owner=owner,
                         name=name,
                         full_name=f"{owner}/{name}",
-                        connection_status="connected"
+                        connection_status=ConnectionStatus.CONNECTED
                     )
                     session.add(new_repo)
                     await session.flush() # Get the ID

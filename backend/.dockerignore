@@ -1,0 +1,29 @@
+# Version Control
+.git
+.gitignore
+
+# Environments
+.env
+.env.*
+!.env.example
+
+# Docker
+.dockerignore
+Dockerfile
+
+# Virtual Environments
+venv/
+env/
+.venv/
+
+# Caches
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.mypy_cache/
+
+# OS & Editor
+.DS_Store
+.vscode/
+.idea/

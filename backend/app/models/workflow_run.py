@@ -8,7 +8,7 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String, Text, UUID
+from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String, Text, UUID, BigInteger
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import BaseModel
@@ -60,7 +60,7 @@ class WorkflowRun(BaseModel):
     )
 
     # ── GitHub Identifiers ────────────────────────────────────────────────────
-    github_run_id: Mapped[int] = mapped_column(Integer, nullable=False, unique=True)
+    github_run_id: Mapped[int] = mapped_column(BigInteger, nullable=False, unique=True)
     workflow_name: Mapped[str] = mapped_column(String(512), nullable=False)
     workflow_path: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
     head_branch: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)

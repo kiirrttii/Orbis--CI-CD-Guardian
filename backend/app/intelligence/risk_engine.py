@@ -106,5 +106,7 @@ def compute_risk_score(probability: float) -> float:
     Legacy compatibility wrapper. 
     Warning: Does not include heuristic refinement.
     """
+    if not (0.0 <= probability <= 1.0):
+        raise ValueError("probability must be between 0.0 and 1.0")
     # Fallback to simple mapping if features are not available
     return round(10.0 + (probability * 90.0), 2)

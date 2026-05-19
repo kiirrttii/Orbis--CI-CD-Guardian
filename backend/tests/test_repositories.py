@@ -51,7 +51,7 @@ async def test_connect_repository_success(client: AsyncClient):
     assert response.status_code == 201
     body = response.json()
     assert body["full_name"] == "octocat/hello-world"
-    assert body["connection_status"] == "connected"
+    assert body["connection_status"] == "CONNECTED"
     assert "repository_id" in body
 
 

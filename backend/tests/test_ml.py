@@ -57,14 +57,14 @@ class TestClassifySeverity:
         [
             (0.0, RiskSeverity.LOW),
             (15.0, RiskSeverity.LOW),
-            (29.9, RiskSeverity.LOW),
-            (30.0, RiskSeverity.MEDIUM),
+            (34.9, RiskSeverity.LOW),
+            (35.0, RiskSeverity.MEDIUM),
             (45.0, RiskSeverity.MEDIUM),
-            (59.9, RiskSeverity.MEDIUM),
-            (60.0, RiskSeverity.HIGH),
+            (64.9, RiskSeverity.MEDIUM),
+            (65.0, RiskSeverity.HIGH),
             (70.0, RiskSeverity.HIGH),
-            (79.9, RiskSeverity.HIGH),
-            (80.0, RiskSeverity.CRITICAL),
+            (84.9, RiskSeverity.HIGH),
+            (85.0, RiskSeverity.CRITICAL),
             (95.0, RiskSeverity.CRITICAL),
             (100.0, RiskSeverity.CRITICAL),
         ],
@@ -165,6 +165,10 @@ def _sample_payload() -> dict:
     }
 
 
+def _low_payload() -> dict:
+    return {k: 0.0 for k in _sample_payload().keys()}
+
+
 class TestPredictSingle:
     def test_returns_correct_structure(self):
         from app.ml.predictor import predict_single
@@ -188,7 +192,7 @@ class TestPredictSingle:
         from app.ml.predictor import predict_single
         from app.schemas.prediction import PredictionRequest
 
-        request = PredictionRequest(**_sample_payload())
+        request = PredictionRequest(**_low_payload())
 
         with patch(
             "app.ml.predictor.get_model",
@@ -199,12 +203,20 @@ class TestPredictSingle:
         assert result.severity == RiskSeverity.LOW
 
 
+def _critical_payload() -> dict:
+    return {k: 1.0 for k in _sample_payload().keys()}
+
+
 class TestPredictBatch:
     def test_batch_returns_correct_count(self):
         from app.ml.predictor import predict_batch
         from app.schemas.prediction import BatchPredictionRequest, PredictionRequest
 
-        payload = [PredictionRequest(**_sample_payload()) for _ in range(3)]
+        payload = [
+            PredictionRequest(**_critical_payload()),
+            PredictionRequest(**_low_payload()),
+            PredictionRequest(**_sample_payload())
+        ]
         request = BatchPredictionRequest(instances=payload)
 
         mock_model = MagicMock()

@@ -21,7 +21,7 @@ from app.schemas.prediction import (
 
 logger = get_logger(__name__)
 
-router = APIRouter(prefix="/predictions", tags=["ML Predictions"])
+router = APIRouter()
 
 
 # ---------------------------------------------------------------------------

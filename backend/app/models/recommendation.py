@@ -24,10 +24,10 @@ class RecommendationPriority(str, enum.Enum):
 
 
 class RecommendationStatus(str, enum.Enum):
-    GENERATED = "generated"
-    ACKNOWLEDGED = "acknowledged"
-    APPLIED = "applied"
-    DISMISSED = "dismissed"
+    GENERATED = "GENERATED"
+    ACKNOWLEDGED = "ACKNOWLEDGED"
+    APPLIED = "APPLIED"
+    DISMISSED = "DISMISSED"
 
 
 class Recommendation(BaseModel):
