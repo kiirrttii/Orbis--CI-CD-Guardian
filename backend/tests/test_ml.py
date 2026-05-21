@@ -344,3 +344,123 @@ class TestSHAPFallback:
         # Impact percents should be sorted in descending order
         for i in range(len(results) - 1):
             assert results[i].impact_percent >= results[i+1].impact_percent
+
+
+@pytest.mark.asyncio
+class TestHistoryUserIsolation:
+    async def test_deployment_isolation(self, client, db_session):
+        from app.models.user import User
+        from app.models.prediction import Prediction
+        from app.models.repository import Repository
+        from app.models.workflow_run import WorkflowRun
+        from app.core.security import hash_password, create_access_token
+        import uuid
+
+        # 1. Create two test users
+        user_a = User(
+            id=uuid.uuid4(),
+            email="usera@example.com",
+            hashed_password=hash_password("password123"),
+            full_name="User A",
+            is_active=True,
+        )
+        user_b = User(
+            id=uuid.uuid4(),
+            email="userb@example.com",
+            hashed_password=hash_password("password123"),
+            full_name="User B",
+            is_active=True,
+        )
+        db_session.add(user_a)
+        db_session.add(user_b)
+        await db_session.flush()
+
+        # 2. Create a repository and workflow run
+        repo = Repository(
+            id=uuid.uuid4(),
+            repo_url="https://github.com/test-owner/test-repo",
+            owner="test-owner",
+            name="test-repo",
+            full_name="test-owner/test-repo",
+        )
+        db_session.add(repo)
+        await db_session.flush()
+
+        run = WorkflowRun(
+            id=uuid.uuid4(),
+            repository_id=repo.id,
+            github_run_id=12345,
+            workflow_name="Isolated Workflow",
+            status="completed",
+            conclusion="success",
+        )
+        db_session.add(run)
+        await db_session.flush()
+
+        # 3. Create prediction for User A
+        pred_a = Prediction(
+            id=uuid.uuid4(),
+            workflow_run_id=run.id,
+            user_id=user_a.id,
+            repository_id=repo.id,
+            model_name="model",
+            model_version="v1",
+            risk_score=35.0,
+            severity="MEDIUM",
+            analysis_type="manual",
+            confidence=0.8,
+            confidence_level="MEDIUM",
+            failure_probability=0.4,
+            predicted_label="pass",
+        )
+        db_session.add(pred_a)
+        await db_session.flush()
+
+        # 4. Create prediction for User B
+        pred_b = Prediction(
+            id=uuid.uuid4(),
+            workflow_run_id=run.id,
+            user_id=user_b.id,
+            repository_id=repo.id,
+            model_name="model",
+            model_version="v1",
+            risk_score=75.0,
+            severity="HIGH",
+            analysis_type="manual",
+            confidence=0.9,
+            confidence_level="HIGH",
+            failure_probability=0.75,
+            predicted_label="fail",
+        )
+        db_session.add(pred_b)
+        await db_session.commit()
+
+        # 5. Get access tokens
+        token_a = create_access_token(subject=str(user_a.id))
+        token_b = create_access_token(subject=str(user_b.id))
+
+        headers_a = {"Authorization": f"Bearer {token_a}"}
+        headers_b = {"Authorization": f"Bearer {token_b}"}
+
+        # 6. User A requests history list - should see only pred_a
+        response_a = await client.get("/api/v1/history/", headers=headers_a)
+        assert response_a.status_code == 200
+        items_a = response_a.json()
+        assert len(items_a) == 1
+        assert items_a[0]["prediction_id"] == str(pred_a.id)
+
+        # 7. User B requests history list - should see only pred_b
+        response_b = await client.get("/api/v1/history/", headers=headers_b)
+        assert response_b.status_code == 200
+        items_b = response_b.json()
+        assert len(items_b) == 1
+        assert items_b[0]["prediction_id"] == str(pred_b.id)
+
+        # 8. User A requests detail for pred_a - should succeed
+        detail_a = await client.get(f"/api/v1/history/{pred_a.id}", headers=headers_a)
+        assert detail_a.status_code == 200
+        assert detail_a.json()["prediction_id"] == str(pred_a.id)
+
+        # 9. User B requests detail for pred_a - should return 404
+        detail_b = await client.get(f"/api/v1/history/{pred_a.id}", headers=headers_b)
+        assert detail_b.status_code == 404

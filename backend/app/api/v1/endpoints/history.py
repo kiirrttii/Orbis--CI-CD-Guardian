@@ -34,7 +34,7 @@ async def list_history(
     Returns a paginated list of historical intelligence analyses.
     """
     repo = IntelligenceRepository(db)
-    history = await repo.get_history(limit=limit, offset=offset)
+    history = await repo.get_history(user_id=current_user.id, limit=limit, offset=offset)
     
     results = []
     for pred in history:
@@ -87,7 +87,8 @@ async def get_history_detail(
     repo = IntelligenceRepository(db)
     pred = await repo.get_prediction_with_details(prediction_id)
     
-    if not pred:
+    # Isolation check: Must exist AND must belong to current_user
+    if not pred or pred.user_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Analysis report not found"

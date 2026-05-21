@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
 from sqlalchemy.orm import selectinload
 
-from app.models.prediction import Prediction
+from app.models.prediction import Prediction, Deployment
 from app.models.feature_contribution import FeatureContribution
 from app.models.recommendation import Recommendation
 from app.models.workflow_run import WorkflowRun
@@ -72,21 +72,23 @@ class IntelligenceRepository:
 
     async def get_history(
         self,
+        user_id: uuid.UUID,
         limit: int = 20,
         offset: int = 0,
         severity_filter: Optional[str] = None
-    ) -> List[Prediction]:
+    ) -> List[Deployment]:
         """
         Retrieves paginated historical predictions
         with workflow run information.
         """
 
         stmt = (
-            select(Prediction)
+            select(Deployment)
             .options(
-                selectinload(Prediction.workflow_run).selectinload(WorkflowRun.repository)
+                selectinload(Deployment.workflow_run).selectinload(WorkflowRun.repository)
             )
-            .order_by(desc(Prediction.created_at))
+            .where(Deployment.user_id == user_id)
+            .order_by(desc(Deployment.created_at))
             .limit(limit)
             .offset(offset)
         )
@@ -94,7 +96,7 @@ class IntelligenceRepository:
         # Optional future severity filtering
         # Example:
         # if severity_filter == "HIGH":
-        #     stmt = stmt.where(Prediction.risk_score >= 75)
+        #     stmt = stmt.where(Deployment.risk_score >= 75)
 
         result = await self.session.execute(stmt)
 

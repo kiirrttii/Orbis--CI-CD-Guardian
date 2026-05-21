@@ -15,6 +15,8 @@ if TYPE_CHECKING:
     from app.models.workflow_run import WorkflowRun
     from app.models.feature_contribution import FeatureContribution
     from app.models.recommendation import Recommendation
+    from app.models.user import User
+    from app.models.repository import Repository
 
 
 class Prediction(BaseModel):
@@ -30,6 +32,18 @@ class Prediction(BaseModel):
         UUID(as_uuid=True),
         ForeignKey("workflow_runs.id", ondelete="CASCADE"),
         nullable=False,
+        index=True,
+    )
+    user_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    repository_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("repositories.id", ondelete="SET NULL"),
+        nullable=True,
         index=True,
     )
 
@@ -54,6 +68,8 @@ class Prediction(BaseModel):
     workflow_run: Mapped["WorkflowRun"] = relationship(
         "WorkflowRun", back_populates="predictions"
     )
+    user: Mapped[Optional["User"]] = relationship("User")
+    repository: Mapped[Optional["Repository"]] = relationship("Repository")
     feature_contributions: Mapped[List["FeatureContribution"]] = relationship(
         "FeatureContribution",
         back_populates="prediction",
@@ -64,3 +80,7 @@ class Prediction(BaseModel):
         back_populates="prediction",
         cascade="all, delete-orphan",
     )
+
+
+# Alias for Deployment Check
+Deployment = Prediction

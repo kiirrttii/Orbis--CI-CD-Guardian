@@ -34,7 +34,8 @@ async def analyze_and_persist(
     session: AsyncSession,
     workflow_run_id: Optional[uuid.UUID] = None,
     analysis_type: str = "manual",
-    repo_url: Optional[str] = None
+    repo_url: Optional[str] = None,
+    user_id: Optional[uuid.UUID] = None
 ) -> IntelligenceResponse:
     """
     Orchestrate the full intelligence flow.
@@ -214,6 +215,8 @@ async def analyze_and_persist(
     
     prediction_model = Prediction(
         workflow_run_id=workflow_run_id,
+        user_id=user_id,
+        repository_id=run.repository_id if run else None,
         model_name="model",
         model_version=inference_result.model_version,
         risk_score=inference_result.risk_score,

@@ -66,7 +66,7 @@ async def analyze_repository(
     request = PredictionRequest(**metrics)
     
     # 3. Call intelligence engine (Task: Persist REAL URL)
-    return await analyze_and_persist(request, db, analysis_type="repository", repo_url=normalized_url)
+    return await analyze_and_persist(request, db, analysis_type="repository", repo_url=normalized_url, user_id=current_user.id)
 
 
 @router.post(
@@ -107,7 +107,7 @@ async def analyze_telemetry(
     request = PredictionRequest(**metrics)
     
     # 3. Call intelligence engine
-    return await analyze_and_persist(request, db, workflow_run_id=payload.workflow_run_id, analysis_type="telemetry")
+    return await analyze_and_persist(request, db, workflow_run_id=payload.workflow_run_id, analysis_type="telemetry", user_id=current_user.id)
 
 
 @router.post(
@@ -134,4 +134,4 @@ async def analyze_upload(
     prediction_req = PredictionRequest(**metrics)
     
     # 3. Call intelligence engine (Task: Consistent history labels for uploads)
-    return await analyze_and_persist(prediction_req, db, analysis_type="upload", repo_url=f"upload://{filename}")
+    return await analyze_and_persist(prediction_req, db, analysis_type="upload", repo_url=f"upload://{filename}", user_id=current_user.id)
