@@ -56,11 +56,14 @@ class Settings(BaseSettings):
     @field_validator("DATABASE_URL", mode="before")
     @classmethod
     def assemble_db_url(cls, v: Optional[str], info) -> str:
+        # Always ensure async engine uses asyncpg driver
         if isinstance(v, str) and v:
             if v.startswith("sqlite") and "+aiosqlite" not in v:
                 return v.replace("sqlite:///", "sqlite+aiosqlite:///")
+            if v.startswith("postgresql://"):
+                # Convert any legacy/fallback postgresql:// to asyncpg
+                return v.replace("postgresql://", "postgresql+asyncpg://", 1)
             return v
-        
         # Build from individual components if not provided as a full URL
         data = info.data
         user = data.get("POSTGRES_USER", "cicd_user")
@@ -68,7 +71,6 @@ class Settings(BaseSettings):
         host = data.get("POSTGRES_HOST", "localhost")
         port = data.get("POSTGRES_PORT", 5432)
         db = data.get("POSTGRES_DB", "cicd_risk_db")
-        
         return f"postgresql+asyncpg://{user}:{password}@{host}:{port}/{db}"
 
     @property
