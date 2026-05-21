@@ -30,6 +30,8 @@ class Settings(BaseSettings):
 
     # ── CORS ─────────────────────────────────────────────────────────────────
     ALLOWED_ORIGINS: List[str] = [
+        # Render frontend (production) — add your deployed frontend domain here
+        "https://orbis-frontendd.onrender.com",
         "http://localhost:3000",
         "http://localhost:3001",
         "http://localhost:8080",
