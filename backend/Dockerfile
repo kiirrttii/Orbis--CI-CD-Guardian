@@ -49,7 +49,7 @@ ENV PYTHONUNBUFFERED=1 \
 
 USER appuser
 
+# Render requires EXPOSE 8000 before CMD
 EXPOSE 8000
 
-# Default command — override in docker-compose for migrations
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 2"]
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port $PORT"]
