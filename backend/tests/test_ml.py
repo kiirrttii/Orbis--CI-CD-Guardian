@@ -293,3 +293,54 @@ async def test_predict_missing_feature_returns_422(client):
     del payload["CYCLO"]
     response = await client.post("/api/v1/predictions/predict", json=payload)
     assert response.status_code == 422
+
+
+class TestModelRegistryFallback:
+    def setup_method(self):
+        from app.ml.model_loader import ModelRegistry
+        ModelRegistry.unload()
+
+    def teardown_method(self):
+        from app.ml.model_loader import ModelRegistry
+        ModelRegistry.unload()
+
+    def test_load_default_fallback_when_missing(self):
+        from app.ml.model_loader import ModelRegistry, MODEL_PATH
+        from unittest.mock import patch
+        
+        # Patch exists() to simulate the model file is not found
+        with patch("pathlib.Path.exists", return_value=False):
+            ModelRegistry.load(MODEL_PATH)
+            
+        assert ModelRegistry.is_loaded
+        assert getattr(ModelRegistry, "_is_mock", False) is True
+        
+        # Verify the fallback model behaves correctly
+        model = ModelRegistry.get()
+        import numpy as np
+        X = np.array([[0.5] * 10])
+        pred = model.predict(X)
+        proba = model.predict_proba(X)
+        assert len(pred) == 1
+        assert proba.shape == (1, 2)
+        assert abs(proba[0][0] + proba[0][1] - 1.0) < 1e-9
+
+
+class TestSHAPFallback:
+    def setup_method(self):
+        from app.explainability.explainer import SHAPRegistry
+        # Force explainer to be not loaded
+        SHAPRegistry._is_loaded = False
+        SHAPRegistry._explainer = None
+
+    def test_generate_explanations_fallback(self):
+        from app.explainability.explainer import generate_explanations
+        
+        feature_vector = [0.5] * 10
+        results = generate_explanations(feature_vector)
+        
+        # We expect a full list of 10 sorted feature contributions
+        assert len(results) == 10
+        # Impact percents should be sorted in descending order
+        for i in range(len(results) - 1):
+            assert results[i].impact_percent >= results[i+1].impact_percent
