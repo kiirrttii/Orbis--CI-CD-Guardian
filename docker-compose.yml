@@ -43,8 +43,8 @@ services:
     volumes:
       # Hot-reload in dev (remove in production)
       - ./backend/app:/app/app
-    # Override production CMD with reload for dev
-    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    # Override production CMD (remove --reload for Render deployment)
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 
   # ── Alembic migrations (run-once job) ────────────────────────────────────────
   migrate:
