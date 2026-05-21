@@ -58,17 +58,37 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             await conn.run_sync(Base.metadata.create_all)
             logger.info("database_tables_ensured")
 
-            # Dynamically upgrade SQLite database schemas if needed
+            # Dynamically upgrade database schemas if needed (SQLite and PostgreSQL compatible)
             from sqlalchemy import text
             try:
-                res = await conn.execute(text("PRAGMA table_info(predictions)"))
-                existing_cols = [row[1] for row in res.fetchall()]
-                if "user_id" not in existing_cols:
-                    logger.info("adding_user_id_column_to_predictions")
-                    await conn.execute(text("ALTER TABLE predictions ADD COLUMN user_id CHAR(36) REFERENCES users(id) ON DELETE SET NULL"))
-                if "repository_id" not in existing_cols:
-                    logger.info("adding_repository_id_column_to_predictions")
-                    await conn.execute(text("ALTER TABLE predictions ADD COLUMN repository_id CHAR(36) REFERENCES repositories(id) ON DELETE SET NULL"))
+                dialect_name = conn.dialect.name
+                existing_cols = []
+                
+                if dialect_name == "sqlite":
+                    res = await conn.execute(text("PRAGMA table_info(predictions)"))
+                    existing_cols = [row[1] for row in res.fetchall()]
+                elif dialect_name == "postgresql":
+                    res = await conn.execute(text(
+                        "SELECT column_name FROM information_schema.columns WHERE table_name = 'predictions'"
+                    ))
+                    existing_cols = [row[0] for row in res.fetchall()]
+                else:
+                    logger.warning("unsupported_dialect_for_dynamic_schema_upgrade", dialect=dialect_name)
+                
+                if existing_cols:
+                    if "user_id" not in existing_cols:
+                        logger.info("adding_user_id_column_to_predictions", dialect=dialect_name)
+                        if dialect_name == "postgresql":
+                            await conn.execute(text("ALTER TABLE predictions ADD COLUMN user_id UUID REFERENCES users(id) ON DELETE SET NULL"))
+                        else:
+                            await conn.execute(text("ALTER TABLE predictions ADD COLUMN user_id CHAR(36) REFERENCES users(id) ON DELETE SET NULL"))
+                            
+                    if "repository_id" not in existing_cols:
+                        logger.info("adding_repository_id_column_to_predictions", dialect=dialect_name)
+                        if dialect_name == "postgresql":
+                            await conn.execute(text("ALTER TABLE predictions ADD COLUMN repository_id UUID REFERENCES repositories(id) ON DELETE SET NULL"))
+                        else:
+                            await conn.execute(text("ALTER TABLE predictions ADD COLUMN repository_id CHAR(36) REFERENCES repositories(id) ON DELETE SET NULL"))
             except Exception as schema_exc:
                 logger.warning("schema_upgrade_skipped_or_failed", error=str(schema_exc))
     except Exception as exc:
