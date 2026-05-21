@@ -16,9 +16,14 @@ import type {
   UserUpdate,
 } from './api-types'
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ||
-  'http://localhost:8000/api/v1'
+const rawApiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
+
+// Normalize API base URL to always include the `/api/v1/` prefix with a trailing slash.
+const API_BASE_URL = (() => {
+  const trimmed = rawApiBase.replace(/\/+$/g, '')
+  const baseWithPrefix = trimmed.endsWith('/api/v1') ? trimmed : `${trimmed}/api/v1`
+  return `${baseWithPrefix}/`
+})()
 
 class APIClient {
   private client: AxiosInstance
@@ -70,24 +75,24 @@ class APIClient {
 
   // ── Health & Model Status ──────────────────────────
   async healthCheck(): Promise<HealthCheckResponse> {
-    const response = await this.client.get<HealthCheckResponse>('/health')
+    const response = await this.client.get<HealthCheckResponse>('health')
     return response.data
   }
 
   async getModelStatus(): Promise<ModelStatusResponse> {
-    const response = await this.client.get<ModelStatusResponse>('/predictions/model/status')
+    const response = await this.client.get<ModelStatusResponse>('predictions/model/status')
     return response.data
   }
 
   // ── Core Analysis ───────────────────────────────────
   async analyzeCode(payload: AnalysisRequest): Promise<AnalysisResponse> {
-    const response = await this.client.post<AnalysisResponse>('/intelligence/analyze', payload)
+    const response = await this.client.post<AnalysisResponse>('intelligence/analyze', payload)
     return response.data
   }
 
   // ── Authentication ──────────────────────────────────
   async login(payload: LoginRequest): Promise<TokenResponse> {
-    const response = await this.client.post<TokenResponse>('/auth/login', payload)
+    const response = await this.client.post<TokenResponse>('auth/login', payload)
     if (response.data.access_token) {
       localStorage.setItem('access_token', response.data.access_token)
       if (typeof window !== 'undefined') {
@@ -98,22 +103,22 @@ class APIClient {
   }
 
   async signup(payload: SignupRequest): Promise<UserResponse> {
-    const response = await this.client.post<UserResponse>('/auth/signup', payload)
+    const response = await this.client.post<UserResponse>('auth/signup', payload)
     return response.data
   }
 
   async getMe(): Promise<UserDetailedResponse> {
-    const response = await this.client.get<UserDetailedResponse>('/auth/me')
+    const response = await this.client.get<UserDetailedResponse>('auth/me')
     return response.data
   }
 
   async updateMe(payload: UserUpdate): Promise<UserDetailedResponse> {
-    const response = await this.client.put<UserDetailedResponse>('/auth/me', payload)
+    const response = await this.client.put<UserDetailedResponse>('auth/me', payload)
     return response.data
   }
 
   async verifyToken(): Promise<VerifyResponse> {
-    const response = await this.client.get<VerifyResponse>('/auth/verify')
+    const response = await this.client.get<VerifyResponse>('auth/verify')
     return response.data
   }
 
@@ -126,19 +131,19 @@ class APIClient {
 
   // ── Operational Analysis ────────────────────────────
   async analyzeRepository(payload: RepositoryAnalysisRequest): Promise<AnalysisResponse> {
-    const response = await this.client.post<AnalysisResponse>('/analysis/repository', payload)
+    const response = await this.client.post<AnalysisResponse>('analysis/repository', payload)
     return response.data
   }
 
   async analyzeTelemetry(payload: TelemetryAnalysisRequest): Promise<AnalysisResponse> {
-    const response = await this.client.post<AnalysisResponse>('/analysis/telemetry', payload)
+    const response = await this.client.post<AnalysisResponse>('analysis/telemetry', payload)
     return response.data
   }
 
   async analyzeUpload(file: File): Promise<AnalysisResponse> {
     const content = await file.text()
     const response = await this.client.post<AnalysisResponse>(
-      `/analysis/upload?filename=${encodeURIComponent(file.name)}`,
+      `analysis/upload?filename=${encodeURIComponent(file.name)}`,
       content,
       { headers: { 'Content-Type': 'text/plain' } }
     )
@@ -147,12 +152,12 @@ class APIClient {
 
   // ── Deployment History ──────────────────────────────
   async getHistory(limit = 20, offset = 0): Promise<AnalysisResponse[]> {
-    const response = await this.client.get<AnalysisResponse[]>('/history', { params: { limit, offset } })
+    const response = await this.client.get<AnalysisResponse[]>('history', { params: { limit, offset } })
     return response.data
   }
 
   async getHistoryDetail(predictionId: string): Promise<AnalysisResponse> {
-    const response = await this.client.get<AnalysisResponse>(`/history/${predictionId}`)
+    const response = await this.client.get<AnalysisResponse>(`history/${predictionId}`)
     return response.data
   }
 }

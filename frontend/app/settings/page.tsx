@@ -336,7 +336,7 @@ export default function SettingsPage() {
                   <input
                     id="api-base-url"
                     type="text"
-                    defaultValue="http://localhost:8000/api/v1"
+                    defaultValue={process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1"}
                     className="w-full px-4 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary font-mono text-sm"
                   />
                 </div>
