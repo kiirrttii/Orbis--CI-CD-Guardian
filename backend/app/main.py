@@ -51,20 +51,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         environment=settings.ENVIRONMENT,
     )
 
-    # ── Automatic table creation for Render/demo ──
+    # ── Automatic table creation for Render/demo (async-safe) ──
     try:
-        from sqlalchemy import inspect
         async with async_engine.begin() as conn:
-            # Only create tables if they don't exist
-            inspector = inspect(conn)
-            existing_tables = await conn.run_sync(lambda sync_conn: inspector.get_table_names())
-            if not existing_tables:
-                await conn.run_sync(Base.metadata.create_all)
-                logger.info("database_tables_created")
-            else:
-                logger.info("database_tables_exist", tables=existing_tables)
+            # Use run_sync to execute the synchronous metadata.create_all
+            await conn.run_sync(Base.metadata.create_all)
+            logger.info("database_tables_ensured")
     except Exception as exc:
-        logger.error("auto_table_creation_failed", error=str(exc))
+        logger.error("auto_table_creation_failed", error=str(exc), exc_info=True)
 
     # ── Load ML model ──────────────────────────────────────────────────────
     try:
