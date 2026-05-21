@@ -9,8 +9,14 @@ Responsibilities:
 - Register global exception handlers
 """
 
+
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
+
+# For automatic table creation
+from sqlalchemy.ext.asyncio import AsyncEngine
+from app.database.base import Base
+from app.database.session import engine as async_engine
 
 import structlog
 from fastapi import FastAPI, Request, status
@@ -44,6 +50,21 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         version=settings.APP_VERSION,
         environment=settings.ENVIRONMENT,
     )
+
+    # ── Automatic table creation for Render/demo ──
+    try:
+        from sqlalchemy import inspect
+        async with async_engine.begin() as conn:
+            # Only create tables if they don't exist
+            inspector = inspect(conn)
+            existing_tables = await conn.run_sync(lambda sync_conn: inspector.get_table_names())
+            if not existing_tables:
+                await conn.run_sync(Base.metadata.create_all)
+                logger.info("database_tables_created")
+            else:
+                logger.info("database_tables_exist", tables=existing_tables)
+    except Exception as exc:
+        logger.error("auto_table_creation_failed", error=str(exc))
 
     # ── Load ML model ──────────────────────────────────────────────────────
     try:
